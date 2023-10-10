@@ -1,9 +1,11 @@
 import logging
 import asyncio
 
-from sqlalchemy import URL
 from aiogram import Bot, Dispatcher
 
+from database.database import create_engine, create_session, proceed_schemas
+
+from database.models import Base
 from handlers import user_handlers, other_handlers
 from config_data.config import Config, load_config
 
@@ -21,8 +23,13 @@ async def main():
 
     config: Config = load_config()
 
+    engine = create_engine()
+    session = create_session(engine)
+    await proceed_schemas(engine, Base.metadata)
+
     bot: Bot = Bot(token=config.tgbot.token,
-                   parse_mode='HTML')
+                   parse_mode='HTML',
+                   session=session)
     dp: Dispatcher = Dispatcher()
 
     dp.include_router(user_handlers.router)
