@@ -1,6 +1,8 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import BigInteger, String
 
+from typing import Union
+
 
 class Base(DeclarativeBase):
     pass
@@ -29,7 +31,8 @@ class TestTask(Base):
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
     text_of_task: Mapped[str]
     picture_file_id: Mapped[str]
-    true_answer: Mapped[int | str]
+    true_answer: Mapped[int]
+    explanation: Mapped[str]
 
 
 

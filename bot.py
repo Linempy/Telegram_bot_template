@@ -3,7 +3,7 @@ import asyncio
 
 from aiogram import Bot, Dispatcher
 
-from database.database import create_engine, create_session, proceed_schemas
+from database.database import create_engine, create_session, proceed_schemas, engine
 
 from database.models import Base
 from handlers import user_handlers, other_handlers
@@ -23,13 +23,10 @@ async def main():
 
     config: Config = load_config()
 
-    engine = create_engine()
-    session = create_session(engine)
     await proceed_schemas(engine, Base.metadata)
 
     bot: Bot = Bot(token=config.tgbot.token,
-                   parse_mode='HTML',
-                   session=session)
+                   parse_mode='HTML')
     dp: Dispatcher = Dispatcher()
 
     dp.include_router(user_handlers.router)
