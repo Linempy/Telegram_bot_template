@@ -16,20 +16,22 @@ async def insert_file(file_id: str, type_file: str, number_task: int) -> None:
         session.add(FileToPrepare(file_id=file_id, type_file=type_file, number_task=number_task))
 
 
-async def select_file(type_file: str, number_task: int):
+#Получение file_id после нажатия на кнопку с файлом
+async def select_files(number_task: int):
     session = create_session(engine)
     async with session.begin() as session:
-        stmt = select(FileToPrepare.file_id).where(FileToPrepare.type_file == type_file, 
-                                                   FileToPrepare.number_task == number_task)
-        response = await session.execute(stmt)
+        stmt = select(FileToPrepare.type_file).where(FileToPrepare.number_task == number_task)
+        result = await session.execute(stmt)
 
-        return response
+        seq = [elem for elem in result.scalars().all()]
+        return seq
         
-        
-async def select_quantity_task() -> set[int]:
+
+# Функция для получения set'а номеров заданий
+async def select_quantity_task() -> set:
     session = create_session(engine)
     async with session.begin() as session:
         stmt = select(FileToPrepare.number_task)
-        response = await session.execute(stmt)
-        return set(response.scalars().all())
+        result = await session.execute(stmt)
+        return set(result.scalars().all())
         
