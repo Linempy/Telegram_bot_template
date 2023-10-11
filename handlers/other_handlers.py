@@ -9,4 +9,5 @@ router = Router()
 
 @router.message()
 async def send_echo(message: Message):
+    print(message.from_user.id)
     await message.answer(text=LEXICON['echo'])

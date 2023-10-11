@@ -22,7 +22,7 @@ class FileToPrepare(Base):
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
     type_file: Mapped[str] = mapped_column(String(32))
     file_id: Mapped[str]
-    number_task: Mapped[int]
+    task_number: Mapped[int]
 
 
 class TestTask(Base):

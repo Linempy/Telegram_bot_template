@@ -6,7 +6,7 @@ from aiogram import Bot, Dispatcher
 from database.database import create_engine, create_session, proceed_schemas, engine
 
 from database.models import Base
-from handlers import user_handlers, other_handlers
+from handlers import user_handlers, other_handlers, admin_handler
 from config_data.config import Config, load_config
 
 
@@ -30,6 +30,7 @@ async def main():
     dp: Dispatcher = Dispatcher()
 
     dp.include_router(user_handlers.router)
+    dp.include_router(admin_handler.router)
     dp.include_router(other_handlers.router)
 
     await bot.delete_webhook(drop_pending_updates=True)

@@ -9,23 +9,15 @@ config: Config = load_config()
 
 url_of_db: URL = URL.create(
     drivername='postgresql+asyncpg',
-    username=config.DB_USER,
-    password=config.DB_PASS,
-    host=config.DB_HOST,
-    port=config.DB_PORT,
-    database=config.DB_NAME
+    username=config.db.DB_USER,
+    password=config.db.DB_PASS,
+    host=config.db.DB_HOST,
+    port=config.db.DB_PORT,
+    database=config.db.DB_NAME
 )
 
 
 def create_engine(url: URL | str) -> AsyncEngine:
-    url_of_db: URL = URL.create(
-    drivername='posgresql+asyncpg',
-    username=config.DB_USER,
-    password=config.DB_PASS,
-    host=config.DB_HOST,
-    port=config.DB_PORT,
-    database=config.DB_NAME
-)
     return create_async_engine(
         url=url,
         echo=True,
