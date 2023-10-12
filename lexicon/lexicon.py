@@ -3,7 +3,6 @@ from random import choice
 
 welcome_words: list[str] = ['Приветствую!', 'Здравствуй!', 'Привет!']
 
-
 LEXICON: dict[str, str] = {
     'start': f'<b>{choice(welcome_words)}</b>\n\nЭто бот, который '
               'поможет в подготовке к Единому Государственному Экзамену '
@@ -22,9 +21,22 @@ LEXICON: dict[str, str] = {
     'type_file': '<b>Выбери один из файлов</b>\nЧтобы узнать, чем они отличаются '
                  'выполни команду /info',
     'send_file': 'Вот, держи свой файлик',
-    'adding_file': 'Выберите, пожалуйста, тему файла',
-    'send_task_number': 'Напишите, пожалуйста, номер задания',
-    'send_file': 'Отправьте документ с материалом'
+    'adding_file': '<b>Выберите тему файла</b>.\nДля отмены выполните команду /cancel',
+    'send_task_number': '<b>Напишите номер задания</b>',
+    'loading_file': '<b>Отправьте документ с материалом</b>',
+    'cancel': 'Ваши действия успешно удалены',
+    'cancel_default_state': 'Мне пока что нечего отменять',
+}
 
+LEXICON_COMMANDS: dict[str, str] = {
+    '/file_to_prepare': 'Файлы для подготовки',
+    '/qiuck_test': 'Мини-тест',
+    '/useful_links': 'Полезные ссылки',
+    '/info': 'Подробная информация',
+    '/help': 'Справка по работе бота'
+}
 
+LEXICON_COMMANDS_ADMIN: dict[str, str] = {
+    '/adding_file': 'Добавить файл',
+    '/cancel': 'Отмена'
 }

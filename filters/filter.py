@@ -3,6 +3,13 @@ from aiogram.types import Message, CallbackQuery
 from config_data.config import Config, load_config
 
 
+class IsNumberButton(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        result = callback.data.split(':')
+        return result[0] == 'but' and result[1].isdigit()
+
+
+
 class IsFilePrepare(BaseFilter):
     async def __call__(self, callback: CallbackQuery) -> bool | set[str, str]:
         result = callback.data.split(':')
@@ -32,4 +39,9 @@ class IsTaskNumber(BaseFilter):
             if result.isdigit() and 1 <= int(result) <= 27:
                 return {'task_number': int(result)}
         return False
+    
+
+class IsCancel(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        return callback.data == 'cancel'
     

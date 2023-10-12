@@ -11,6 +11,8 @@ def create_type_files_kb(task_num: str, type_files: list) -> InlineKeyboardMarku
         callback_data=f'{type_file}:{task_num}') for type_file in type_files],
         width=3)
     
+    kb_builder.row(InlineKeyboardButton(text='Отмена', callback_data='cancel'))
+    
     return kb_builder.as_markup()
     
     

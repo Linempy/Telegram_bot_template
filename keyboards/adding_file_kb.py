@@ -3,11 +3,13 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 
 def create_adding_file_kb() -> InlineKeyboardMarkup:
-    kb_builber: InlineKeyboardBuilder = InlineKeyboardBuilder()
+    kb_builder: InlineKeyboardBuilder = InlineKeyboardBuilder()
 
-    kb_builber.row(*[InlineKeyboardButton(
+    kb_builder.row(*[InlineKeyboardButton(
         text=desc,
         callback_data=f'but:{desc}') for desc in ('Теория', 'Теория Python', 'Практика')],
         width=3)
     
-    return kb_builber.as_markup()
+    kb_builder.row(InlineKeyboardButton(text='Отмена', callback_data='cancel'))
+    
+    return kb_builder.as_markup()

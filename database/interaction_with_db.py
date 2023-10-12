@@ -10,12 +10,6 @@ async def insert_user(user_id: int, username: str, full_name: str) -> None:
         session.add(User(user_id, username, full_name))
 
 
-async def insert_file(file_id: str, type_file: str, task_number: int) -> None:
-    session = create_session(engine)
-    async with session.begin() as session:
-        session.add(FileToPrepare(file_id=file_id, type_file=type_file, task_number=task_number))
-
-
 #Создание кнопок 'Теория', 'Теория Python' и 'Практика' после нажатия на кнопку номером задания
 async def select_type_files(task_number: int):
     session = create_session(engine)
@@ -47,11 +41,15 @@ async def select_quantity_task() -> set:
         return set(result.scalars().all())
     
 
-
 # ----- Админ запросы -----
 async def insert_file(file_id: str, type_file: str, task_number: int):
     session = create_session(engine)
     async with session.begin() as session:
+        data = await session.execute(select(FileToPrepare).where(FileToPrepare.type_file == type_file,
+                                                        FileToPrepare.task_number == task_number)
+        )
+        for elem in data.scalars():
+            await session.delete(elem)
         session.add(FileToPrepare(file_id=file_id, type_file=type_file, task_number=task_number))
 
         
