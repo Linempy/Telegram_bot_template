@@ -6,7 +6,9 @@ from config_data.config import Config, load_config
 class IsNumberButton(BaseFilter):
     async def __call__(self, callback: CallbackQuery) -> bool:
         result = callback.data.split(':')
-        return result[0] == 'but' and result[1].isdigit()
+        if result[0] == 'but' and result[1].isdigit():
+            return {'task_num': int(result[1])}
+        return False
 
 
 
@@ -45,3 +47,20 @@ class IsCancel(BaseFilter):
     async def __call__(self, callback: CallbackQuery) -> bool:
         return callback.data == 'cancel'
     
+
+class IsBackTypeFile(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        return callback.data == 'back:type_file'
+    
+
+class IsBackSendFile(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool | set[int]:
+        result = callback.data.split(':')
+        if result[:2] == ['back', 'sendfile'] and result[-1].isdigit():
+            return {'task_num': int(result[-1])}
+        return False
+    
+
+class IsCancelNumKeyboard(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        return callback.data == 'cancel_num_kb'

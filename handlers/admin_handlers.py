@@ -29,12 +29,13 @@ async def process_adding_file_command(message: Message, state: FSMContext):
 
 
 @router.callback_query(IsAdmin(), IsCancel(), StateFilter(FSMAddFile.type_file_state))
-async def process_cancel_button_press(callback: CallbackQuery):
+async def process_cancel_button_press(callback: CallbackQuery, state: FSMContext):
     try:
         await callback.message.delete()
-        await callback.answer()
     except:
-        await callback.message.answer(text=LEXICON['error'])    
+        await callback.message.answer(text=LEXICON['error'])   
+    finally:
+        await state.clear()
 
 
 @router.message(Command(commands=['cancel']), StateFilter(default_state), IsAdmin())
@@ -54,7 +55,6 @@ async def process_cancel_button_press(message: Message, state: FSMContext):
     finally:
         await state.clear()
     
-
 
 @router.callback_query(IsAdmin(), IsTypeFile(), StateFilter(FSMAddFile.type_file_state))
 async def process_type_button_press(callback: CallbackQuery, state: FSMContext, type_file: str):
