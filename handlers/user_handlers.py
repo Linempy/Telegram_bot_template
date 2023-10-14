@@ -1,11 +1,18 @@
-from aiogram import Router, Bot
-from aiogram.filters import Command, CommandStart, or_f
-from aiogram.types import Message, CallbackQuery
+import json
 
-from database.interaction_with_db import select_quantity_task, select_type_files, get_file_id
+from aiogram import Router, Bot
+from aiogram.filters import Command, CommandStart, StateFilter, or_f
+from aiogram.types import Message, CallbackQuery
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import default_state
+
+from states.state import FSMTestProcess
+from database.interaction_with_db import (select_quantity_task, select_type_files, 
+                                          get_file_id, select_task_test)
 from filters.filter import (IsFilePrepare, IsNumberButton, IsBackTypeFile, 
                             IsBackSendFile, IsCancelNumKeyboard)
 from keyboards.files_kb import create_back_to_type_file_button
+from keyboards.test_kb import create_test_task_kb
 from keyboards.number_task_kb import create_number_task_kb
 from keyboards.files_kb import create_type_files_kb
 from keyboards.main_menu import create_main_menu
@@ -13,7 +20,7 @@ from lexicon.lexicon import LEXICON
 
 
 router = Router()
-
+LIMIT_TASK = 5
 
 @router.message(CommandStart())
 async def process_start_command(message: Message, bot: Bot):
@@ -39,9 +46,9 @@ async def process_file_to_prepare_command(message: Message):
         await message.answer(text=LEXICON['error'])
 
 
-@router.message(Command(commands=['quick_test']))
-async def process_test_command(message: Message):
-    await message.answer('Тут будет тест')
+# @router.message(Command(commands=['quick_test']))
+# async def process_test_command(message: Message):
+#     await message.answer('Тут будет тест')
 
 
 @router.message(Command(commands=['info']))
@@ -98,3 +105,89 @@ async def process_button_back_press(callback: CallbackQuery):
 @router.callback_query(IsCancelNumKeyboard())
 async def process_cancel_btn_of_num_kb_press(callback: CallbackQuery):
     await callback.message.delete()
+
+
+@router.message(Command(commands=['quick_test']))
+async def process_poll(message: Message):
+    await message.answer_poll(question="2+2=?", 
+                              options=['1', '2', '3', '4'],
+                              type='quiz', 
+                              correct_option_id=3, 
+                              is_anonymous=False,
+                              explanation='2+2=4')
+    
+
+@router.message(Command(commands=['quick_test_2']), StateFilter(default_state))
+async def process_quick_test_2_command(message: Message, state: FSMContext):
+    num_task = 1
+    correct_count = 0
+    data = await select_task_test()
+
+    await message.answer(text=data[0].task_text,
+                         reply_markup=create_test_task_kb(data[0].id, [data[0].explanation]))
+    
+    await state.update_data(num_task=num_task)
+    await state.update_data(correct_answer=correct_count)
+    await state.set_state(FSMTestProcess.task_1)
+
+
+@router.callback_query(StateFilter(FSMTestProcess))
+async def process_task_1(callback: CallbackQuery, state: FSMContext):
+    data = await select_task_test()
+
+    states = {
+        2: FSMTestProcess.task_2,
+        3: FSMTestProcess.task_3,
+        4: FSMTestProcess.task_4,
+        5: FSMTestProcess.task_5
+    }
+
+    num_task = (await state.get_data())['num_task']
+    if num_task <= LIMIT_TASK:
+        correct_count = (await state.get_data())['correct_answer']
+
+        await callback.message.edit_text(
+            text=data[num_task].task_text,
+            reply_markup=create_test_task_kb(data[num_task].id, 
+                                             [data[num_task].options]
+                                            )
+        )
+        
+        if callback.data == data[num_task].true_answer:
+            correct_count += 1
+
+        num_task += 1
+        await state.update_data(answer_1=callback.data)
+        await state.update_data(num_task=num_task)
+        await state.update_data(correct_answer=correct_count)
+        await state.set_state(states[num_task])
+    else:
+        await callback.message.edit_text(text=f'{LEXICON["finish_test"]}{correct_count}')
+        # Добавить изменение столбца shipped на значение True
+        await state.clear()
+
+
+@router.message(Command(commands=['cancel']), StateFilter(default_state))
+async def process_cancel_button_press(message: Message):
+    try:
+        await message.answer(text=LEXICON['cancel_default_state'])
+    except:
+        await message.answer(text=LEXICON['error'])
+
+
+@router.message(Command(commands=['cancel']), StateFilter(FSMTestProcess))
+async def process_cancel_button_press(message: Message, state: FSMContext):
+    try:
+        await message.answer(text=LEXICON['cancel_test'])
+    except:
+        await message.answer(text=LEXICON['error'])
+    finally:
+        await state.clear()
+
+
+@router.message(StateFilter(FSMTestProcess))
+async def process_delete_msg(message: Message, state: FSMContext):
+    try:
+        await message.delete()
+    except:
+        await message.answer(text=LEXICON['error'])

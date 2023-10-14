@@ -1,5 +1,5 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import BigInteger, String
+from sqlalchemy import BigInteger, String, ARRAY
 
 from typing import Union
 
@@ -29,10 +29,13 @@ class TestTask(Base):
     __tablename__ = 'Test_task'
 
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
-    text_of_task: Mapped[str]
-    picture_file_id: Mapped[str]
+    task_text: Mapped[str]
+    picture_file_id: Mapped[str] = mapped_column(nullable=True)
+    options: Mapped[list] = mapped_column(ARRAY(String(16)))
     true_answer: Mapped[int]
     explanation: Mapped[str]
+    shipped: Mapped[bool] = mapped_column(default=False)
+
 
 
 

@@ -46,7 +46,7 @@ async def process_cancel_button_press(message: Message):
         await message.answer(text=LEXICON['error'])
 
 
-@router.message(Command(commands=['cancel']), ~StateFilter(default_state), IsAdmin())
+@router.message(Command(commands=['cancel']), StateFilter(FSMAddFile), IsAdmin())
 async def process_cancel_button_press(message: Message, state: FSMContext):
     try:
         await message.answer(text=LEXICON['cancel'])
@@ -90,12 +90,20 @@ async def process_adding_file_command(message: Message, state: FSMContext):
         await message.answer(text=LEXICON['error'])
 
 
-@router.message(IsAdmin(), ~StateFilter(default_state))
+@router.message(IsAdmin(), StateFilter(FSMAddFile))
 async def process_delete_msg(message: Message, state: FSMContext):
     try:
         await message.delete()
     except:
         await message.answer(text=LEXICON['error'])
+
+
+@router.message(Command(commands=['/adding_task']), StateFilter(default_state), IsAdmin())
+async def process_adding_task(message: Message):
+    await message.delete()
+    await message.answer(text=LEXICON['get_task_text'])
+    # coding..
+
 
 
     
