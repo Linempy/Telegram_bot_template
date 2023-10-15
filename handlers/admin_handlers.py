@@ -101,7 +101,7 @@ async def process_delete_msg(message: Message, state: FSMContext):
 @router.message(Command(commands=['/adding_task']), StateFilter(default_state), IsAdmin())
 async def process_adding_task(message: Message):
     await message.delete()
-    await message.answer(text=LEXICON['get_task_text'])
+    await message.answer(text=LEXICON['get_task_title'])
     # coding..
 
 

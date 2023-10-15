@@ -1,5 +1,7 @@
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import BigInteger, String, ARRAY
+
+
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship 
+from sqlalchemy import BigInteger, String, ARRAY, ForeignKey
 
 from typing import Union
 
@@ -15,6 +17,8 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(32), unique=True)
     full_name: Mapped[str] = mapped_column(String(128))
 
+    task: Mapped[list["TestTask"]] = relationship(back_populates='users', secondary=True, uselist=True)
+
 
 class FileToPrepare(Base):
     __tablename__ = 'File_to_prepare'
@@ -25,6 +29,14 @@ class FileToPrepare(Base):
     task_number: Mapped[int]
 
 
+class UserTask(Base):
+    __tablename__ = 'user_task'
+
+    id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
+    # user_id: Mapped[int] = mapped_column(ForeignKey('user.user_id'))
+    # task_text: Mapped[str] = mapped_column(ForeignKey(''))
+
+
 class TestTask(Base):
     __tablename__ = 'Test_task'
 
@@ -32,10 +44,10 @@ class TestTask(Base):
     task_text: Mapped[str]
     picture_file_id: Mapped[str] = mapped_column(nullable=True)
     options: Mapped[list] = mapped_column(ARRAY(String(16)))
-    true_answer: Mapped[int]
+    true_answer: Mapped[str] = mapped_column(String(16))
     explanation: Mapped[str]
     shipped: Mapped[bool] = mapped_column(default=False)
 
-
+    user: Mapped[list['User']] = relationship(back_populates='Test_table', secondary=True, uselist=True)
 
 
