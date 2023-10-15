@@ -2,3 +2,4 @@
 .env
 /.git
 /.vscode
+/__pycache__
