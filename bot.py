@@ -4,11 +4,11 @@ import asyncio
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.redis import RedisStorage, Redis
 
-from database.database import proceed_schemas, engine
-from database.models import Base
+from core.database import proceed_schemas, engine
+from core.database import Base
 from keyboards.main_menu import create_main_menu
 from handlers import user_handlers, other_handlers, admin_handlers
-from config_data.config import Config, load_config
+from core.config import Config, load_config
 
 
 logger = logging.getLogger(__name__)
@@ -17,19 +17,19 @@ logger = logging.getLogger(__name__)
 async def main():
     logging.basicConfig(
         level=logging.INFO,
-        format='%(filename)s:%(lineno)d #%(levelname)-8s '
-               '[%(asctime)s] - %(name)s - %(message)s')
-    
-    logger.info('Starting bot')
+        format="%(filename)s:%(lineno)d #%(levelname)-8s "
+        "[%(asctime)s] - %(name)s - %(message)s",
+    )
+
+    logger.info("Starting bot")
 
     config: Config = load_config()
-    redis = Redis(host='localhost')
+    redis = Redis(host="localhost")
     storage = RedisStorage(redis=redis)
 
     await proceed_schemas(engine, Base.metadata)
 
-    bot: Bot = Bot(token=config.tgbot.token,
-                   parse_mode='HTML')
+    bot: Bot = Bot(token=config.tgbot.token, parse_mode="HTML")
     dp: Dispatcher = Dispatcher(storage=storage)
 
     dp.include_router(user_handlers.router)
@@ -41,5 +41,5 @@ async def main():
     await dp.start_polling(bot)
 
 
-if __name__ == '__main__':
-    asyncio.run(main()) 
+if __name__ == "__main__":
+    asyncio.run(main())
