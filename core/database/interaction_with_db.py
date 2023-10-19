@@ -1,6 +1,6 @@
 from sqlalchemy import select
 
-from core.database.models import User, FileToPrepare, TestTask
+from core.database.user import User, FileToPrepare, TestTask
 from core.database.database import engine, create_session
 
 

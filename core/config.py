@@ -11,11 +11,7 @@ class TgBot:
 
 @dataclass
 class DatabaseConfig:
-    DB_HOST: str
-    DB_PASS: str
-    DB_NAME: str
-    DB_PORT: int
-    DB_USER: str
+    url: str
     echo: bool = True
 
 
@@ -34,22 +30,10 @@ def load_config(path: str | None = None) -> Config:
             token=env("BOT_TOKEN"), ADMIN_IDS=list(map(int, env.list("ADMIN_IDS")))
         ),
         db=DatabaseConfig(
-            DB_HOST=env("DB_HOST"),
-            DB_PASS=env("DB_PASS"),
-            DB_NAME=env("DB_NAME"),
-            DB_PORT=env("DB_PORT"),
-            DB_USER=env("DB_USER"),
+            url=f"postgresql+asyncpg://{env('DB_USER')}:{env('DB_PASS')}@"
+            f"{env('DB_HOST')}:{env('DB_PORT')}/{env('DB_NAME')}"
         ),
     )
 
 
-config: Config = load_config()
-
-url_db: URL = URL.create(
-    drivername="postgresql+asyncpg",
-    username=config.db.DB_USER,
-    password=config.db.DB_PASS,
-    host=config.db.DB_HOST,
-    port=config.db.DB_PORT,
-    database=config.db.DB_NAME,
-)
+setting: Config = load_config()
