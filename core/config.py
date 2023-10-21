@@ -36,4 +36,4 @@ def load_config(path: str | None = None) -> Config:
     )
 
 
-setting: Config = load_config()
+settings: Config = load_config()

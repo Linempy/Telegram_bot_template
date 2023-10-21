@@ -5,6 +5,9 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 
 from random import shuffle
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from states.state import FSMTestProcess
 from core.database import (
     select_quantity_task,
@@ -43,12 +46,12 @@ async def process_help_command(message: Message):
 
 
 @router.message(Command(commands=["file_to_prepare"]))
-async def process_file_to_prepare_command(message: Message):
+async def process_file_to_prepare_command(message: Message, session: AsyncSession):
     try:
         await message.delete()
         await message.answer(
             text=LEXICON["file_to_prepare"],
-            reply_markup=create_number_task_kb(await select_quantity_task()),
+            reply_markup=create_number_task_kb(await select_quantity_task(session)),
         )
     except Exception as e:
         print(e)
@@ -71,16 +74,22 @@ async def process_useful_links_command(message: Message):
 
 
 @router.callback_query(or_f(IsNumberButton(), IsBackSendFile()))
-async def process_button_with_task_number_press(callback: CallbackQuery, task_num: int):
+async def process_button_with_task_number_press(
+    callback: CallbackQuery, task_num: int, session: AsyncSession
+):
     try:
         await callback.message.delete()
         await callback.message.answer(
             text=LEXICON["type_file"],
             reply_markup=create_type_files_kb(
-                task_num=task_num, type_files=await select_type_files(int(task_num))
+                task_num=task_num,
+                type_files=await select_type_files(
+                    task_number=task_num, session=session
+                ),
             ),
         )
     except Exception as e:
+        print(e)
         await callback.message.answer(text=LEXICON["error"])
     finally:
         await callback.answer()
@@ -88,18 +97,21 @@ async def process_button_with_task_number_press(callback: CallbackQuery, task_nu
 
 @router.callback_query(IsFilePrepare())
 async def process_type_file_buttton_press(
-    callback: CallbackQuery, type_file: str, task_number: int
+    callback: CallbackQuery, type_file: str, task_number: int, session: AsyncSession
 ):
     try:
         await callback.message.delete()
 
-        file_id = await get_file_id(type_file=type_file, task_number=task_number)
+        file_id = await get_file_id(
+            type_file=type_file, task_number=task_number, session=session
+        )
         await callback.message.answer_document(document=file_id)
         await callback.message.answer(
             text=LEXICON["send_file"],
             reply_markup=create_back_to_type_file_button(task_num=task_number),
         )
     except Exception as e:
+        print(e)
         await callback.message.answer(text=LEXICON["error"])
     finally:
         await callback.answer()

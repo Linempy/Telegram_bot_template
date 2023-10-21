@@ -4,6 +4,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from aiogram.exceptions import TelegramBadRequest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from states.state import FSMAddFile
 from core.database import insert_file
@@ -13,8 +14,6 @@ from lexicon.lexicon import LEXICON
 
 
 router = Router()
-
-#! Сделать через FSM
 
 
 @router.message(
@@ -82,19 +81,23 @@ async def process_adding_file_command(
         await state.set_state(FSMAddFile.file_state)
 
         await message.answer(text=LEXICON["loading_file"])
-    except:
+    except Exception as e:
+        print(e)
         await message.answer(text=LEXICON["error"])
 
 
 @router.message(IsAdmin(), F.content_type == "document", StateFilter(FSMAddFile))
-async def process_adding_file_command(message: Message, state: FSMContext):
+async def process_adding_file_command(
+    message: Message, state: FSMContext, session: AsyncSession
+):
     try:
         await state.update_data(file_id=message.document.file_id)
-        await insert_file(**(await state.get_data()))
+        await insert_file(**(await state.get_data()), session=session)
         await state.clear()
 
         await message.answer("Файл успешно добавлен!")
-    except:
+    except Exception as e:
+        print(e)
         await message.answer(text=LEXICON["error"])
 
 
@@ -107,7 +110,7 @@ async def process_delete_msg(message: Message, state: FSMContext):
 
 
 @router.message(
-    Command(commands=["/adding_task"]), StateFilter(default_state), IsAdmin()
+    Command(commands=["adding_task"]), StateFilter(default_state), IsAdmin()
 )
 async def process_adding_task(message: Message):
     await message.delete()
