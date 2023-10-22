@@ -7,8 +7,11 @@ class FSMAddFile(StatesGroup):
     file_state = State()
 
 
-class FSMAddTestTask(StatesGroup):
-    pass
+class FSMAddTask(StatesGroup):
+    title_state = State()
+    picture_state = State()
+    quiz_state = State()
+    finish_state = State()
 
 
 class FSMTestProcess(StatesGroup):
@@ -17,4 +20,3 @@ class FSMTestProcess(StatesGroup):
     task_3 = State()
     task_4 = State()
     task_5 = State()
-

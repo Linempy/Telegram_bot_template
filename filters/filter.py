@@ -4,7 +4,7 @@ from core.config import Config, load_config
 
 
 class IsNumberButton(BaseFilter):
-    async def __call__(self, callback: CallbackQuery) -> bool:
+    async def __call__(self, callback: CallbackQuery) -> bool | dict[str, int]:
         result = callback.data.split(":")
         if result[0] == "but" and result[1].isdigit():
             return {"task_num": int(result[1])}
@@ -12,7 +12,7 @@ class IsNumberButton(BaseFilter):
 
 
 class IsFilePrepare(BaseFilter):
-    async def __call__(self, callback: CallbackQuery) -> bool | set[str, str]:
+    async def __call__(self, callback: CallbackQuery) -> bool | dict[str, str]:
         result = callback.data.split(":")
         if result[0] in ("Теория", "Теория Python", "Практика") and result[1].isdigit():
             return {"type_file": result[0], "task_number": int(result[1])}
@@ -26,7 +26,7 @@ class IsAdmin(BaseFilter):
 
 
 class IsTypeFile(BaseFilter):
-    async def __call__(self, callback: CallbackQuery) -> bool | set[str]:
+    async def __call__(self, callback: CallbackQuery) -> bool | dict[str]:
         result = callback.data.split(":")
         if result[0] == "but" and result[1] in ("Теория", "Теория Python", "Практика"):
             return {"type_file": result[1]}
@@ -34,7 +34,7 @@ class IsTypeFile(BaseFilter):
 
 
 class IsTaskNumber(BaseFilter):
-    async def __call__(self, message: Message) -> bool | set[int]:
+    async def __call__(self, message: Message) -> bool | dict[str, int]:
         if message.content_type == "text":
             result = message.text.replace(" ", "")
             if result.isdigit() and 1 <= int(result) <= 27:
@@ -53,7 +53,7 @@ class IsBackTypeFile(BaseFilter):
 
 
 class IsBackSendFile(BaseFilter):
-    async def __call__(self, callback: CallbackQuery) -> bool | set[int]:
+    async def __call__(self, callback: CallbackQuery) -> bool | dict[str, int]:
         result = callback.data.split(":")
         if result[:2] == ["back", "sendfile"] and result[-1].isdigit():
             return {"task_num": int(result[-1])}
@@ -63,3 +63,15 @@ class IsBackSendFile(BaseFilter):
 class IsCancelNumKeyboard(BaseFilter):
     async def __call__(self, callback: CallbackQuery) -> bool:
         return callback.data == "cancel_num_kb"
+
+
+class IsNotSendPicture(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        text = callback.data.split(":")
+        return text[0] == "picture" and text[-1] == "no"
+
+
+class IsDoneQuiz(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        text = callback.data.split(":")
+        return text[0] == "quiz" and text[-1] == "done"

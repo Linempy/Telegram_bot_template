@@ -14,6 +14,7 @@ from core.database import (
     select_type_files,
     get_file_id,
     select_task_test,
+    create_user,
 )
 from filters.filter import (
     IsFilePrepare,
@@ -22,10 +23,13 @@ from filters.filter import (
     IsBackSendFile,
     IsCancelNumKeyboard,
 )
-from keyboards.files_kb import create_back_to_type_file_button
-from keyboards.number_task_kb import create_number_task_kb
-from keyboards.files_kb import create_type_files_kb
-from keyboards.main_menu import create_main_menu
+from keyboards import (
+    create_back_to_type_file_button,
+    create_number_task_kb,
+    create_type_files_kb,
+    create_main_menu,
+)
+
 from lexicon.lexicon import LEXICON
 
 
@@ -34,7 +38,14 @@ LIMIT_TASK = 5
 
 
 @router.message(CommandStart())
-async def process_start_command(message: Message, bot: Bot):
+async def process_start_command(message: Message, bot: Bot, session: AsyncSession):
+    data = message.from_user
+    await create_user(
+        user_id=data.id,
+        username=data.username,
+        full_name=data.full_name,
+        session=session,
+    )
     await message.answer(text=LEXICON["start"])
     await create_main_menu(bot, message.from_user.id)
 
@@ -58,9 +69,9 @@ async def process_file_to_prepare_command(message: Message, session: AsyncSessio
         await message.answer(text=LEXICON["error"])
 
 
-# @router.message(Command(commands=['quick_test']))
-# async def process_test_command(message: Message):
-#     await message.answer('Тут будет тест')
+@router.message(Command(commands=["quick_test"]))
+async def process_test_command(message: Message):
+    await message.answer(text=LEXICON["get_task_title"])
 
 
 @router.message(Command(commands=["info"]))
@@ -96,7 +107,7 @@ async def process_button_with_task_number_press(
 
 
 @router.callback_query(IsFilePrepare())
-async def process_type_file_buttton_press(
+async def process_type_file_button_press(
     callback: CallbackQuery, type_file: str, task_number: int, session: AsyncSession
 ):
     try:
@@ -118,11 +129,11 @@ async def process_type_file_buttton_press(
 
 
 @router.callback_query(IsBackTypeFile())
-async def process_button_back_press(callback: CallbackQuery):
+async def process_button_back_press(callback: CallbackQuery, session: AsyncSession):
     await callback.message.delete()
     await callback.message.answer(
         text=LEXICON["file_to_prepare"],
-        reply_markup=create_number_task_kb(await select_quantity_task()),
+        reply_markup=create_number_task_kb(await select_quantity_task(session)),
     )
 
 
@@ -132,11 +143,11 @@ async def process_cancel_btn_of_num_kb_press(callback: CallbackQuery):
 
 
 @router.message(Command(commands=["quick_test"]), StateFilter(default_state))
-async def process_poll(message: Message, state: FSMContext):
+async def process_poll(message: Message, state: FSMContext, session: AsyncSession):
     num_task = 0
     correct_count = 0
 
-    data = await select_task_test()
+    data = await select_task_test(session)
     shuffle(data[num_task].options)
     id_true_answer = (data[num_task].options).index(data[num_task].true_answer)
 

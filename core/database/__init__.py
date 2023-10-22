@@ -7,10 +7,11 @@ __all__ = [
     "db_helper",
     "select_type_files",
     "select_quantity_task",
-    "insert_user",
+    "create_user",
     "insert_file",
     "get_file_id",
     "select_task_test",
+    "insert_task",
 ]
 
 from .base import Base
@@ -23,7 +24,8 @@ from .crud import (
     select_quantity_task,
     select_type_files,
     insert_file,
-    insert_user,
+    insert_task,
+    create_user,
     get_file_id,
     select_task_test,
 )
