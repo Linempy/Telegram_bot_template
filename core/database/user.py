@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import BigInteger, String
 
-from .association import Association
+from .user_task_association import UserTaskAssociation
 from core.database import Base
 
 
@@ -19,7 +19,7 @@ class User(Base):
     full_name: Mapped[str] = mapped_column(String(128))
 
     task: Mapped[list["Task"]] = relationship(
-        back_populates="user", secondary=Association.__tablename__
+        back_populates="user", secondary=UserTaskAssociation.__tablename__
     )
 
     def __str__(self):

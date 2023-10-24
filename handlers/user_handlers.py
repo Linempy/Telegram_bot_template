@@ -4,17 +4,15 @@ from aiogram.types import Message, CallbackQuery, PollAnswer
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 
-from random import shuffle
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from states.state import FSMTestProcess
+from states.state import FSMTestProcess, OrderTask
 from core.database import (
     select_quantity_task,
     select_type_files,
     get_file_id,
     select_task_test,
-    create_user,
+    insert_user,
 )
 from filters.filter import (
     IsFilePrepare,
@@ -29,7 +27,7 @@ from keyboards import (
     create_type_files_kb,
     create_main_menu,
 )
-
+from services import get_correct_id_after_shuffle, get_correct_option, process_shuffle
 from lexicon.lexicon import LEXICON
 
 
@@ -40,7 +38,7 @@ LIMIT_TASK = 5
 @router.message(CommandStart())
 async def process_start_command(message: Message, bot: Bot, session: AsyncSession):
     data = message.from_user
-    await create_user(
+    await insert_user(
         user_id=data.id,
         username=data.username,
         full_name=data.full_name,
@@ -69,9 +67,9 @@ async def process_file_to_prepare_command(message: Message, session: AsyncSessio
         await message.answer(text=LEXICON["error"])
 
 
-@router.message(Command(commands=["quick_test"]))
-async def process_test_command(message: Message):
-    await message.answer(text=LEXICON["get_task_title"])
+# @router.message(Command(commands=["quick_test"]))
+# async def process_test_command(message: Message):
+#     await message.answer(text=LEXICON["get_task_title"])
 
 
 @router.message(Command(commands=["info"]))
@@ -142,33 +140,76 @@ async def process_cancel_btn_of_num_kb_press(callback: CallbackQuery):
     await callback.message.delete()
 
 
-@router.message(Command(commands=["quick_test"]), StateFilter(default_state))
-async def process_poll(message: Message, state: FSMContext, session: AsyncSession):
-    num_task = 0
-    correct_count = 0
+@router.message(
+    Command(commands=["quick_test"]),
+    or_f(StateFilter(default_state)),
+)
+async def process_send_poll(message: Message, state: FSMContext, session: AsyncSession):
+    data = await state.get_data()
+    print(data.get("num_task"))
+    if not data.get("num_task"):
+        count_true_answer = 0
 
-    data = await select_task_test(session)
-    shuffle(data[num_task].options)
-    id_true_answer = (data[num_task].options).index(data[num_task].true_answer)
+    quiz = await select_task_test(session)
+    num_task = (await state.get_data()).get("num_task", 0)
 
-    await message.answer_poll(
-        question=data[num_task].task_text,
-        options=data[num_task].options,
+    correct_option = get_correct_option(quiz)
+    process_shuffle(quiz)
+    correct_id = get_correct_id_after_shuffle(task=quiz, correct_option=correct_option)
+
+    msg = await message.answer_poll(
+        question=quiz.question,
+        options=quiz.options,
         type="quiz",
-        correct_option_id=id_true_answer,
+        correct_option_id=correct_id,
         is_anonymous=False,
-        explanation=data[num_task].explanation,
+        explanation=quiz.explanation,
     )
 
+    await state.update_data(poll_id=msg.poll.id)
+    await state.update_data(chat_id=message.chat.id)
     await state.update_data(num_task=num_task)
-    await state.update_data(count_true_answer=correct_count)
+    await state.update_data(correct_id=correct_id)
     await state.set_state(FSMTestProcess.task_2)
 
 
-@router.poll_answer()
-async def porcess_poll(poll_answer: PollAnswer):
-    if poll_answer.option_ids == ".count()":
-        print(1)
+@router.poll_answer(StateFilter(FSMTestProcess))
+async def process_poll(
+    poll: PollAnswer, state: FSMContext, bot: Bot, session: AsyncSession
+):
+    data = await state.get_data()
+    print(poll.option_ids)
+    count_true_answer = data.get("count_true_answer", 0)
+    if poll.option_ids[0] == data["correct_id"]:
+        count_true_answer += 1
+        await state.update_data(count_true_answer=count_true_answer)
+
+    num_task = data["num_task"] + 1
+
+    data = await state.get_data()
+    print(data.get("num_task"))
+
+    quiz = await select_task_test(session)
+    num_task = data.get("num_task", 0)
+
+    correct_option = get_correct_option(quiz)
+    process_shuffle(quiz)
+    correct_id = get_correct_id_after_shuffle(task=quiz, correct_option=correct_option)
+
+    await state.update_data(num_task=num_task)
+    await state.update_data(count_true_answer=count_true_answer)
+    await state.set_state(OrderTask.order_state.get(num_task))
+
+    chat_id = data["chat_id"]
+    await bot.send_poll(
+        chat_id=chat_id,
+        question=quiz.question,
+        options=quiz.options,
+        correct_option_id=quiz.correct_option_id,
+        explanation=quiz.explanation,
+        is_anonymous=False,
+        type="quiz",
+    )
 
 
 # @router.message(Command(commands=['quick_test_2']), StateFilter(default_state))

@@ -1,15 +1,21 @@
-from sqlalchemy import select
+import asyncio
+
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from core.database import User, Task, File
+from core.database import User, Task, File, UserTaskAssociation, db_helper
 
 
-async def create_user(
+async def insert_user(
     user_id: int, username: str, full_name: str, session: AsyncSession
 ) -> None:
-    user = User(user_id=user_id, username=username, full_name=full_name)
-    session.add(user)
-    await session.commit()
+    stmt = select(User).where(User.user_id == user_id)
+    result = await session.scalar(stmt)
+    if result is not None:
+        user = User(user_id=user_id, username=username, full_name=full_name)
+        session.add(user)
+        await session.commit()
 
 
 # Создание кнопок 'Теория', 'Теория Python' и 'Практика' после нажатия на кнопку номером задания
@@ -39,21 +45,26 @@ async def select_quantity_task(session: AsyncSession) -> set:
 
 
 # Получение данных task test
-async def select_task_test(session: AsyncSession) -> tuple[Task]:
-    stmt = select(Task).where(Task).limit(5)
-    data = await session.scalars(stmt)
-    result = data.all()
-    for task in result:
-        session.expunge(task)
-    if result is not None:
-        return result
-    # Дописать случай, если result == None
-    # TestTask.id,
-    #   TestTask.task_text,
-    #   TestTask.picture_file_id,
-    #   TestTask.options,
-    #   TestTask.true_answer,
-    #   TestTask.explanation
+async def select_task_test(session: AsyncSession) -> None | Task:
+    stmt = select(Task).order_by(func.random()).limit(1)
+    task = await session.scalar(stmt)
+    # tasks = tuple(task for task in result)
+    return task
+
+
+# Дописать случай, если result == None
+# TestTask.id,
+#   TestTask.task_text,
+#   TestTask.picture_file_id,
+#   TestTask.options,
+#   TestTask.true_answer,
+#   TestTask.explanation
+
+
+async def main():
+    async with db_helper.session_factory() as session:
+        result = await select_task_test(session)
+        print(result)
 
 
 # ----- Админ запросы -----
@@ -73,7 +84,7 @@ async def insert_file(
     await session.commit()
 
 
-async def insert_task(
+async def create_task(
     title: str,
     question: str,
     options: list[str],
@@ -93,3 +104,7 @@ async def insert_task(
         )
     )
     await session.commit()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

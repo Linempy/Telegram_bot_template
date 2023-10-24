@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, ARRAY
+from sqlalchemy import String, ARRAY, BigInteger
 
-from .association import Association
+from .user_task_association import UserTaskAssociation
 from core.database import Base
 
 if TYPE_CHECKING:
@@ -22,5 +22,11 @@ class Task(Base):
     explanation: Mapped[str]
 
     user: Mapped[list["User"]] = relationship(
-        back_populates="task", secondary=Association.__tablename__
+        back_populates="task", secondary=UserTaskAssociation.__tablename__
     )
+
+    def __str__(self):
+        return f"{self.__class__.__name__}(id={self.id}, username={self.question!r})"
+
+    def __repr__(self):
+        return str(self)

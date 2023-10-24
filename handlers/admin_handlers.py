@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from services import Quiz
 from states.state import FSMAddFile, FSMAddTask
-from core.database import insert_file, insert_task
+from core.database import insert_file, create_task
 from keyboards import (
     create_quiz_kb,
     create_picture_no_button_kb,
@@ -203,6 +203,6 @@ async def process_get_quiz(message: Message, state: FSMContext):
 async def process_get_quiz(
     callback: CallbackQuery, state: FSMContext, session: AsyncSession
 ):
-    await insert_task(**(await state.get_data()), session=session)
+    await create_task(**(await state.get_data()), session=session)
     await callback.message.edit_text(text=LEXICON["success_add_task"])
     await state.clear()

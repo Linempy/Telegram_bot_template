@@ -4,14 +4,15 @@ __all__ = [
     "User",
     "Task",
     "File",
+    "UserTaskAssociation",
     "db_helper",
     "select_type_files",
     "select_quantity_task",
-    "create_user",
+    "insert_user",
     "insert_file",
     "get_file_id",
     "select_task_test",
-    "insert_task",
+    "create_task",
 ]
 
 from .base import Base
@@ -20,12 +21,13 @@ from .db_helper import db_helper
 from .user import User
 from .task import Task
 from .file import File
+from .user_task_association import UserTaskAssociation
 from .crud import (
     select_quantity_task,
     select_type_files,
     insert_file,
-    insert_task,
-    create_user,
+    create_task,
+    insert_user,
     get_file_id,
     select_task_test,
 )
