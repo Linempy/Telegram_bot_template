@@ -1,6 +1,6 @@
 import asyncio
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, exists
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -45,26 +45,35 @@ async def select_quantity_task(session: AsyncSession) -> set:
 
 
 # Получение данных task test
-async def select_task_test(session: AsyncSession) -> None | Task:
-    stmt = select(Task).order_by(func.random()).limit(1)
+async def select_task_test(user_id: int, session: AsyncSession) -> None | Task:
+    stmt_1 = (
+        select(User).where(User.user_id == user_id).options(selectinload(User.task))
+    )
+    user = await session.scalar(stmt_1)
+    # print(user.task)
+    # stmt_2 = exists().where(user.task.id == UserTaskAssociation.task_id)
+
+    stmt_2 = exists().where(
+        (Task.id == UserTaskAssociation.task_id)
+        & (user.user_id == UserTaskAssociation.user_id)
+    )
+    stmt = select(Task).filter(~stmt_2).order_by(func.random()).limit(1)
     task = await session.scalar(stmt)
     # tasks = tuple(task for task in result)
     return task
 
 
-# Дописать случай, если result == None
-# TestTask.id,
-#   TestTask.task_text,
-#   TestTask.picture_file_id,
-#   TestTask.options,
-#   TestTask.true_answer,
-#   TestTask.explanation
+async def insert_user_task(user_id: int, task_id: int, session: AsyncSession) -> None:
+    user_task = UserTaskAssociation(user_id=user_id, task_id=task_id)
+    session.add(user_task)
+    await session.commit()
 
 
 async def main():
     async with db_helper.session_factory() as session:
-        result = await select_task_test(session)
-        print(result)
+        pass
+        # result = await insert_user_task(user_id=1061280205, task_id=3, session=session)
+        # print(user.task)
 
 
 # ----- Админ запросы -----

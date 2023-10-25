@@ -1,4 +1,4 @@
-from aiogram import Router, F
+from aiogram import Router, Bot, F
 from aiogram.filters import Command, StateFilter, or_f
 from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
@@ -172,6 +172,7 @@ async def process_get_picture(callback: CallbackQuery, state: FSMContext):
 
 @router.message(StateFilter(FSMAddTask.quiz_state), F.content_type == "poll")
 async def process_get_quiz(message: Message, state: FSMContext):
+    await message.delete()
     await state.update_data(
         question=message.poll.question,
         options=[o.text for o in message.poll.options],
@@ -184,7 +185,7 @@ async def process_get_quiz(message: Message, state: FSMContext):
     quiz = Quiz(**data)
     if quiz.picture is not None:
         await message.answer_photo(photo=quiz.picture)
-    await message.answer_poll(
+    msg = await message.answer_poll(
         question=quiz.question,
         options=quiz.options,
         is_anonymous=False,
@@ -196,13 +197,26 @@ async def process_get_quiz(message: Message, state: FSMContext):
     await message.answer(
         text=LEXICON["done_quiz"], reply_markup=create_done_button_kb()
     )
+    await state.update_data(message_id=msg.message_id)
+    await state.update_data(chat_id=message.chat.id)
     await state.set_state(FSMAddTask.finish_state)
 
 
 @router.callback_query(StateFilter(FSMAddTask.finish_state), IsDoneQuiz())
 async def process_get_quiz(
-    callback: CallbackQuery, state: FSMContext, session: AsyncSession
+    callback: CallbackQuery, bot: Bot, state: FSMContext, session: AsyncSession
 ):
-    await create_task(**(await state.get_data()), session=session)
+    data = await state.get_data()
+    print(data["message_id"])
+    await bot.delete_message(chat_id=data["chat_id"], message_id=data["message_id"])
+    await create_task(
+        session=session,
+        title=data["title"],
+        question=data["question"],
+        options=data["options"],
+        correct_option_id=data["correct_option_id"],
+        explanation=data["explanation"],
+        picture_file_id=data.get("picture_file_id"),
+    )
     await callback.message.edit_text(text=LEXICON["success_add_task"])
     await state.clear()

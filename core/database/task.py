@@ -19,7 +19,7 @@ class Task(Base):
     picture_file_id: Mapped[str | None]
     options: Mapped[list] = mapped_column(ARRAY(String(32)))
     correct_option_id: Mapped[str] = mapped_column(String(16))
-    explanation: Mapped[str]
+    explanation: Mapped[str] #todo Может быть None
 
     user: Mapped[list["User"]] = relationship(
         back_populates="task", secondary=UserTaskAssociation.__tablename__

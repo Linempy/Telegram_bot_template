@@ -13,6 +13,8 @@ class Quiz:
         options: list[str],
         correct_option_id: int,
         explanation: str,
+        # message_id: int,
+        # chat_id: int,
         picture_file_id: str | None = None,
     ):
         self.title: str = title
@@ -23,18 +25,12 @@ class Quiz:
         ]  # "Распакованное" содержимое массива m-options в массив options
         self.correct_option_id: int = correct_option_id
         self.explanation = explanation
-        self.message_id: int = 0  # Сообщение с викториной (для закрытия)
+        # self.message_id: int = message_id  # Сообщение с викториной (для закрытия)
+        # self.chat_id: int = chat_id
 
 
-def get_correct_option(task: Task) -> str:
+def get_corr_id_in_shuffle_options(task: Task) -> int:
     id_true_answer = int(task.correct_option_id)
-    print(task.options[id_true_answer])
-    return task.options[id_true_answer]
-
-
-def process_shuffle(task: Task) -> None:
+    correct_option = task.options[id_true_answer]
     shuffle(task.options)
-
-
-def get_correct_id_after_shuffle(task: Task, correct_option: str) -> int:
     return task.options.index(correct_option)

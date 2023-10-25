@@ -13,6 +13,7 @@ from core.database import (
     get_file_id,
     select_task_test,
     insert_user,
+    insert_user_task,
 )
 from filters.filter import (
     IsFilePrepare,
@@ -27,7 +28,7 @@ from keyboards import (
     create_type_files_kb,
     create_main_menu,
 )
-from services import get_correct_id_after_shuffle, get_correct_option, process_shuffle
+from services import get_corr_id_in_shuffle_options
 from lexicon.lexicon import LEXICON
 
 
@@ -145,70 +146,98 @@ async def process_cancel_btn_of_num_kb_press(callback: CallbackQuery):
     or_f(StateFilter(default_state)),
 )
 async def process_send_poll(message: Message, state: FSMContext, session: AsyncSession):
-    data = await state.get_data()
-    print(data.get("num_task"))
-    if not data.get("num_task"):
-        count_true_answer = 0
+    quiz = await select_task_test(user_id=message.from_user.id, session=session)
+    if quiz is not None:
+        await insert_user_task(
+            user_id=message.from_user.id, task_id=quiz.id, session=session
+        )
+        num_task = 1
+        correct_id = get_corr_id_in_shuffle_options(quiz)
 
-    quiz = await select_task_test(session)
-    num_task = (await state.get_data()).get("num_task", 0)
+        msg = await message.answer_poll(
+            question=quiz.question,
+            options=quiz.options,
+            type="quiz",
+            correct_option_id=correct_id,
+            is_anonymous=False,
+            explanation=quiz.explanation,
+        )
 
-    correct_option = get_correct_option(quiz)
-    process_shuffle(quiz)
-    correct_id = get_correct_id_after_shuffle(task=quiz, correct_option=correct_option)
-
-    msg = await message.answer_poll(
-        question=quiz.question,
-        options=quiz.options,
-        type="quiz",
-        correct_option_id=correct_id,
-        is_anonymous=False,
-        explanation=quiz.explanation,
-    )
-
-    await state.update_data(poll_id=msg.poll.id)
-    await state.update_data(chat_id=message.chat.id)
-    await state.update_data(num_task=num_task)
-    await state.update_data(correct_id=correct_id)
-    await state.set_state(FSMTestProcess.task_2)
+        await state.update_data(poll_id=msg.poll.id)
+        await state.update_data(chat_id=message.chat.id)
+        await state.update_data(num_task=num_task)
+        await state.update_data(correct_id=correct_id)
+        await state.set_state(OrderTask.order_state.get(num_task))
+    else:
+        await message.answer(text=LEXICON["task_over"])
 
 
-@router.poll_answer(StateFilter(FSMTestProcess))
+@router.poll_answer(
+    StateFilter(FSMTestProcess) and ~StateFilter(FSMTestProcess.result),
+)
 async def process_poll(
     poll: PollAnswer, state: FSMContext, bot: Bot, session: AsyncSession
 ):
     data = await state.get_data()
-    print(poll.option_ids)
     count_true_answer = data.get("count_true_answer", 0)
+
     if poll.option_ids[0] == data["correct_id"]:
-        count_true_answer += 1
-        await state.update_data(count_true_answer=count_true_answer)
+        await state.update_data(count_true_answer=count_true_answer + 1)
 
-    num_task = data["num_task"] + 1
+    quiz = await select_task_test(user_id=poll.user.id, session=session)
+    if quiz is not None:
+        await insert_user_task(user_id=poll.user.id, task_id=quiz.id, session=session)
+        num_task = data.get("num_task", 0) + 1
+        correct_id = get_corr_id_in_shuffle_options(quiz)
 
+        await state.update_data(num_task=num_task)
+        await state.update_data(correct_id=correct_id)
+        await state.set_state(OrderTask.order_state.get(num_task))
+
+        chat_id = data["chat_id"]
+        await bot.send_poll(
+            chat_id=chat_id,
+            question=quiz.question,
+            options=quiz.options,
+            correct_option_id=correct_id,
+            explanation=quiz.explanation,
+            is_anonymous=False,
+            type="quiz",
+        )
+    else:
+        await bot.send_message(chat_id=data["chat_id"], text=LEXICON["task_over"])
+        await bot.send_message(
+            data["chat_id"],
+            text=f"{LEXICON['test_result']} {data.get('count_true_answer', 0)}",
+        )
+        # await state.clear()
+
+
+@router.poll_answer(StateFilter(FSMTestProcess.result))
+async def process_send_result_test(poll: PollAnswer, bot: Bot, state: FSMContext):
     data = await state.get_data()
-    print(data.get("num_task"))
+    await bot.send_message(
+        data["chat_id"],
+        text=f"{LEXICON['test_result']} {data.get('count_true_answer', 0)}",
+    )
 
-    quiz = await select_task_test(session)
-    num_task = data.get("num_task", 0)
+    await state.clear()
 
-    correct_option = get_correct_option(quiz)
-    process_shuffle(quiz)
-    correct_id = get_correct_id_after_shuffle(task=quiz, correct_option=correct_option)
 
-    await state.update_data(num_task=num_task)
-    await state.update_data(count_true_answer=count_true_answer)
-    await state.set_state(OrderTask.order_state.get(num_task))
+@router.message(Command(commands=["cancel"]), StateFilter(FSMTestProcess))
+async def process_cancel_button_press(message: Message, state: FSMContext):
+    try:
+        await message.answer(text=LEXICON["cancel_test"])
+    except:
+        await message.answer(text=LEXICON["error"])
+    finally:
+        await state.clear()
 
-    chat_id = data["chat_id"]
-    await bot.send_poll(
-        chat_id=chat_id,
-        question=quiz.question,
-        options=quiz.options,
-        correct_option_id=quiz.correct_option_id,
-        explanation=quiz.explanation,
-        is_anonymous=False,
-        type="quiz",
+
+@router.message(StateFilter(FSMTestProcess))
+async def process_send_result_test(message: Message, bot: Bot):
+    await message.answer(
+        text=LEXICON["not_finish_test"],
     )
 
 
@@ -266,23 +295,5 @@ async def process_poll(
 async def process_cancel_button_press(message: Message):
     try:
         await message.answer(text=LEXICON["cancel_default_state"])
-    except:
-        await message.answer(text=LEXICON["error"])
-
-
-@router.message(Command(commands=["cancel"]), StateFilter(FSMTestProcess))
-async def process_cancel_button_press(message: Message, state: FSMContext):
-    try:
-        await message.answer(text=LEXICON["cancel_test"])
-    except:
-        await message.answer(text=LEXICON["error"])
-    finally:
-        await state.clear()
-
-
-@router.message(StateFilter(FSMTestProcess))
-async def process_delete_msg(message: Message, state: FSMContext):
-    try:
-        await message.delete()
     except:
         await message.answer(text=LEXICON["error"])

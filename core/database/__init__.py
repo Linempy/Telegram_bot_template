@@ -10,6 +10,7 @@ __all__ = [
     "select_quantity_task",
     "insert_user",
     "insert_file",
+    "insert_user_task",
     "get_file_id",
     "select_task_test",
     "create_task",
@@ -28,6 +29,7 @@ from .crud import (
     insert_file,
     create_task,
     insert_user,
+    insert_user_task,
     get_file_id,
     select_task_test,
 )

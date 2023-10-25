@@ -1,14 +1,10 @@
 __all__ = [
     "Quiz",
-    "get_correct_option",
-    "get_correct_id_after_shuffle",
-    "process_shuffle",
+    "get_corr_id_in_shuffle_options",
 ]
 
 
 from .service import (
     Quiz,
-    get_correct_option,
-    get_correct_id_after_shuffle,
-    process_shuffle,
+    get_corr_id_in_shuffle_options,
 )
