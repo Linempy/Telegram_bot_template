@@ -7,7 +7,7 @@ from aiogram.fsm.state import default_state
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from states.state import FSMTestProcess, OrderTask
-from core.database import (
+from database import (
     select_quantity_task,
     select_type_files,
     get_file_id,

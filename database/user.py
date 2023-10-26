@@ -4,7 +4,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import BigInteger, String
 
 from .user_task_association import UserTaskAssociation
-from core.database import Base
+from database import Base
 
 
 if TYPE_CHECKING:

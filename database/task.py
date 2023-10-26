@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, ARRAY, BigInteger
+from sqlalchemy import String, ARRAY
 
 from .user_task_association import UserTaskAssociation
-from core.database import Base
+from database import Base
 
 if TYPE_CHECKING:
     from .user import User

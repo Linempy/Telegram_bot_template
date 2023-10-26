@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from services import Quiz
 from states.state import FSMAddFile, FSMAddTask
-from core.database import insert_file, create_task
+from database import insert_file, create_task
 from keyboards import (
     create_quiz_kb,
     create_picture_no_button_kb,

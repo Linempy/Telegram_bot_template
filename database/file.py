@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String
 
-from core.database import Base
+from database import Base
 
 
 class File(Base):

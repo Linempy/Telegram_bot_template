@@ -1,4 +1,4 @@
-from core.database import Task
+from database import Task
 
 from random import shuffle
 

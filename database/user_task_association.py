@@ -1,7 +1,7 @@
 from sqlalchemy import ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from core.database import Base
+from database import Base
 
 
 class UserTaskAssociation(Base):

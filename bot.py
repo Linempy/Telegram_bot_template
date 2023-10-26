@@ -5,10 +5,10 @@ from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.redis import RedisStorage, Redis
 
 from middlewares.db import DbSessionMiddleware
-from core.database import proceed_schemas, Base, db_helper
+from database import proceed_schemas, Base, db_helper
 from keyboards import create_main_menu
 from handlers import user_handlers, other_handlers, admin_handlers
-from core.config import settings
+from config_data import settings
 
 
 logger = logging.getLogger(__name__)

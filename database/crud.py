@@ -4,7 +4,7 @@ from sqlalchemy import select, func, exists
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from core.database import User, Task, File, UserTaskAssociation, db_helper
+from database import User, Task, File, UserTaskAssociation, db_helper
 
 
 async def insert_user(

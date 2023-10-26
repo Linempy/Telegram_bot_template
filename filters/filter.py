@@ -1,6 +1,6 @@
 from aiogram.filters import BaseFilter
 from aiogram.types import Message, CallbackQuery
-from core.config import Config, load_config
+from config_data import settings
 
 
 class IsNumberButton(BaseFilter):
@@ -21,8 +21,7 @@ class IsFilePrepare(BaseFilter):
 
 class IsAdmin(BaseFilter):
     async def __call__(self, message: Message) -> bool:
-        config: Config = load_config()
-        return message.from_user.id in config.tgbot.ADMIN_IDS
+        return message.from_user.id in settings.tgbot.ADMIN_IDS
 
 
 class IsTypeFile(BaseFilter):
