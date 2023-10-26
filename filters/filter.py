@@ -75,3 +75,8 @@ class IsDoneQuiz(BaseFilter):
     async def __call__(self, callback: CallbackQuery) -> bool:
         text = callback.data.split(":")
         return text[0] == "quiz" and text[-1] == "done"
+
+
+class IsStartTest(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        return callback.data == "start_test"

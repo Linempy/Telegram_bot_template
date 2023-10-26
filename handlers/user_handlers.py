@@ -1,6 +1,6 @@
 from aiogram import Router, Bot
 from aiogram.filters import Command, CommandStart, StateFilter, or_f
-from aiogram.types import Message, CallbackQuery, PollAnswer
+from aiogram.types import Message, CallbackQuery, PollAnswer, ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 
@@ -21,12 +21,15 @@ from filters.filter import (
     IsBackTypeFile,
     IsBackSendFile,
     IsCancelNumKeyboard,
+    IsStartTest,
+    IsCancel,
 )
 from keyboards import (
     create_back_to_type_file_button,
     create_number_task_kb,
     create_type_files_kb,
     create_main_menu,
+    create_start_test_kb,
 )
 from services import get_corr_id_in_shuffle_options
 from lexicon.lexicon import LEXICON
@@ -68,9 +71,12 @@ async def process_file_to_prepare_command(message: Message, session: AsyncSessio
         await message.answer(text=LEXICON["error"])
 
 
-# @router.message(Command(commands=["quick_test"]))
-# async def process_test_command(message: Message):
-#     await message.answer(text=LEXICON["get_task_title"])
+@router.message(Command(commands=["get_table"]))
+async def process_test_command(message: Message):
+    await message.answer_document(
+        document="BQACAgIAAxkBAAIOtmU6im4VYro2GOsEkrkWswqeG4zQAAKyPgACaFfZSZXYy3gCtwVTMAQ",
+        caption=LEXICON["get_table"],
+    )
 
 
 @router.message(Command(commands=["info"]))
@@ -141,20 +147,30 @@ async def process_cancel_btn_of_num_kb_press(callback: CallbackQuery):
     await callback.message.delete()
 
 
-@router.message(
-    Command(commands=["quick_test"]),
-    or_f(StateFilter(default_state)),
+@router.message(Command(commands=["quick_test"]), StateFilter(default_state))
+async def process_quick_test_command(message: Message, state: FSMContext):
+    await message.answer(
+        text=LEXICON["quick_test"], reply_markup=create_start_test_kb()
+    )
+
+
+@router.callback_query(
+    IsStartTest(),
 )
-async def process_send_poll(message: Message, state: FSMContext, session: AsyncSession):
-    quiz = await select_task_test(user_id=message.from_user.id, session=session)
+async def process_send_poll(
+    callback: CallbackQuery, state: FSMContext, session: AsyncSession
+):
+    await callback.message.delete()
+
+    quiz = await select_task_test(user_id=callback.from_user.id, session=session)
     if quiz is not None:
         await insert_user_task(
-            user_id=message.from_user.id, task_id=quiz.id, session=session
+            user_id=callback.from_user.id, task_id=quiz.id, session=session
         )
         num_task = 1
         correct_id = get_corr_id_in_shuffle_options(quiz)
 
-        msg = await message.answer_poll(
+        msg = await callback.message.answer_poll(
             question=quiz.question,
             options=quiz.options,
             type="quiz",
@@ -164,12 +180,12 @@ async def process_send_poll(message: Message, state: FSMContext, session: AsyncS
         )
 
         await state.update_data(poll_id=msg.poll.id)
-        await state.update_data(chat_id=message.chat.id)
+        await state.update_data(chat_id=callback.chat.id)
         await state.update_data(num_task=num_task)
         await state.update_data(correct_id=correct_id)
         await state.set_state(OrderTask.order_state.get(num_task))
     else:
-        await message.answer(text=LEXICON["task_over"])
+        await callback.message.answer(text=LEXICON["task_over"])
 
 
 @router.poll_answer(
@@ -210,7 +226,7 @@ async def process_poll(
             data["chat_id"],
             text=f"{LEXICON['test_result']} {data.get('count_true_answer', 0)}",
         )
-        # await state.clear()
+        await state.clear()
 
 
 @router.poll_answer(StateFilter(FSMTestProcess.result))
@@ -235,10 +251,15 @@ async def process_cancel_button_press(message: Message, state: FSMContext):
 
 
 @router.message(StateFilter(FSMTestProcess))
-async def process_send_result_test(message: Message, bot: Bot):
+async def process_send_result_test(message: Message):
     await message.answer(
         text=LEXICON["not_finish_test"],
     )
+
+
+@router.callback_query(IsCancel())
+async def process_send_result_test(callback: CallbackQuery):
+    await callback.message.delete()
 
 
 # @router.message(Command(commands=['quick_test_2']), StateFilter(default_state))
@@ -294,6 +315,8 @@ async def process_send_result_test(message: Message, bot: Bot):
 @router.message(Command(commands=["cancel"]), StateFilter(default_state))
 async def process_cancel_button_press(message: Message):
     try:
-        await message.answer(text=LEXICON["cancel_default_state"])
+        await message.answer(
+            text=LEXICON["cancel_default_state"], reply_markup=ReplyKeyboardRemove()
+        )
     except:
         await message.answer(text=LEXICON["error"])

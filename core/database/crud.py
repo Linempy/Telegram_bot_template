@@ -12,7 +12,7 @@ async def insert_user(
 ) -> None:
     stmt = select(User).where(User.user_id == user_id)
     result = await session.scalar(stmt)
-    if result is not None:
+    if result is None:
         user = User(user_id=user_id, username=username, full_name=full_name)
         session.add(user)
         await session.commit()
