@@ -15,5 +15,9 @@ class UserTaskAssociation(Base):
     )
 
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"), primary_key=True)
-    task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"), primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.user_id", ondelete="CASCADE"), primary_key=True
+    )
+    task_id: Mapped[int] = mapped_column(
+        ForeignKey("tasks.id", ondelete="CASCADE"), primary_key=True
+    )

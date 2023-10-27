@@ -161,8 +161,10 @@ async def process_send_poll(
     callback: CallbackQuery, state: FSMContext, session: AsyncSession
 ):
     await callback.message.delete()
-
     quiz = await select_task_test(user_id=callback.from_user.id, session=session)
+    print(quiz)
+    print()
+    print()
     if quiz is not None:
         await insert_user_task(
             user_id=callback.from_user.id, task_id=quiz.id, session=session
@@ -178,9 +180,11 @@ async def process_send_poll(
             is_anonymous=False,
             explanation=quiz.explanation,
         )
-
+        print(correct_id)
+        print()
+        print()
         await state.update_data(poll_id=msg.poll.id)
-        await state.update_data(chat_id=callback.chat.id)
+        await state.update_data(chat_id=callback.message.chat.id)
         await state.update_data(num_task=num_task)
         await state.update_data(correct_id=correct_id)
         await state.set_state(OrderTask.order_state.get(num_task))
@@ -196,7 +200,7 @@ async def process_poll(
 ):
     data = await state.get_data()
     count_true_answer = data.get("count_true_answer", 0)
-
+    print(poll.option_ids[0] == data.get("correct_id"))
     if poll.option_ids[0] == data["correct_id"]:
         await state.update_data(count_true_answer=count_true_answer + 1)
 
@@ -221,6 +225,7 @@ async def process_poll(
             type="quiz",
         )
     else:
+        data = await state.get_data()
         await bot.send_message(chat_id=data["chat_id"], text=LEXICON["task_over"])
         await bot.send_message(
             data["chat_id"],

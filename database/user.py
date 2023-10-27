@@ -15,11 +15,12 @@ class User(Base):
     __tablename__ = "users"
 
     user_id: Mapped[int] = mapped_column(BigInteger, unique=True, primary_key=True)
-    username: Mapped[str] = mapped_column(String(32), unique=True)
+    username: Mapped[str | None] = mapped_column(String(32), unique=True)
     full_name: Mapped[str] = mapped_column(String(128))
 
     task: Mapped[list["Task"]] = relationship(
-        back_populates="user", secondary=UserTaskAssociation.__tablename__
+        back_populates="user",
+        secondary=UserTaskAssociation.__tablename__,
     )
 
     def __str__(self):

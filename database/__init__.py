@@ -14,10 +14,10 @@ __all__ = [
     "get_file_id",
     "select_task_test",
     "create_task",
+    "select_tasks",
 ]
 
-from .base import Base
-from .database import proceed_schemas
+from .base import Base, proceed_schemas
 from .db_helper import db_helper
 from .user import User
 from .task import Task
@@ -32,4 +32,5 @@ from .crud import (
     insert_user_task,
     get_file_id,
     select_task_test,
+    select_tasks,
 )

@@ -9,12 +9,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from services import Quiz
 from states.state import FSMAddFile, FSMAddTask
-from database import insert_file, create_task
+from database import insert_file, create_task, select_tasks
 from keyboards import (
     create_quiz_kb,
     create_picture_no_button_kb,
     create_adding_file_kb,
     create_done_button_kb,
+    create_show_tasks_kb,
+    create_edit_keyboard,
 )
 
 from filters.filter import (
@@ -146,6 +148,9 @@ async def process_get_title(message: Message, state: FSMContext):
     elif "".join(message.text.split()).isdigit():
         await message.answer(text=LEXICON["only_numbers"])
         return
+    elif message.text[0] == "/":
+        await message.answer(text=LEXICON["write_title"])
+        return
     await state.update_data(title=message.text)
     await state.set_state(FSMAddTask.picture_state)
     await message.answer(
@@ -220,3 +225,11 @@ async def process_get_quiz(
     )
     await callback.message.edit_text(text=LEXICON["success_add_task"])
     await state.clear()
+
+
+@router.message(Command(commands=["show_tasks"]))
+async def process_show_tasks(message: Message, session: AsyncSession):
+    tasks = await select_tasks(session)
+    await message.answer(
+        text=LEXICON["show_tasks"], reply_markup=create_show_tasks_kb(tasks)
+    )

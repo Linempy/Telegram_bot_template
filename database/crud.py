@@ -63,6 +63,13 @@ async def select_task_test(user_id: int, session: AsyncSession) -> None | Task:
     return task
 
 
+async def select_tasks(session: AsyncSession) -> None | tuple[Task]:
+    stmt = select(Task.title)
+    tasks = await session.scalars(stmt)
+    print(tasks.all())
+    return tasks.all()
+
+
 async def insert_user_task(user_id: int, task_id: int, session: AsyncSession) -> None:
     user_task = UserTaskAssociation(user_id=user_id, task_id=task_id)
     session.add(user_task)

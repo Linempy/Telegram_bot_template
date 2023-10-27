@@ -19,14 +19,15 @@ class Task(Base):
     picture_file_id: Mapped[str | None]
     options: Mapped[list] = mapped_column(ARRAY(String(32)))
     correct_option_id: Mapped[str] = mapped_column(String(16))
-    explanation: Mapped[str]  # todo Может быть None
+    explanation: Mapped[str | None]
 
     user: Mapped[list["User"]] = relationship(
-        back_populates="task", secondary=UserTaskAssociation.__tablename__
+        back_populates="task",
+        secondary=UserTaskAssociation.__tablename__,
     )
 
     def __str__(self):
-        return f"{self.__class__.__name__}(id={self.id}, username={self.question!r})"
+        return f"{self.__class__.__name__}(id={self.id}, title={self.title}, username={self.question!r})"
 
     def __repr__(self):
         return str(self)
