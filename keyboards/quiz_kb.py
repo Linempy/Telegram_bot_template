@@ -59,10 +59,9 @@ def create_done_button_kb() -> InlineKeyboardMarkup:
     return kb_builder.as_markup()
 
 
-def create_show_tasks_kb(tasks: tuple[Task]) -> InlineKeyboardMarkup:
+def create_show_tasks_kb(tasks: tuple[Task], page: int) -> InlineKeyboardMarkup:
     kb_builder: InlineKeyboardBuilder = InlineKeyboardBuilder()
-    print(tasks)
-    for task in tasks:
+    for task in tasks[page - 1 : page * 10 if page * 10 <= len(tasks) else len(tasks)]:
         kb_builder.row(
             *[
                 InlineKeyboardButton(
@@ -72,6 +71,24 @@ def create_show_tasks_kb(tasks: tuple[Task]) -> InlineKeyboardMarkup:
             ],
             width=1,
         )
+
+    max_page = len(tasks) // 10 if not len(tasks) % 10 else len(tasks) // 10 + 1
+    middle_button = f"{page}/{max_page}"
+    buttons = [LEXICON["backward"], middle_button, LEXICON["forward"]]
+    if page == 1:
+        buttons = buttons[1:]
+    elif page == max_page:
+        buttons = buttons[:-1]
+
+    kb_builder.row(
+        *[
+            InlineKeyboardButton(
+                text=LEXICON.get(button, button),
+                callback_data=LEXICON.get(button, button),
+            )
+            for button in buttons
+        ]
+    )
 
     kb_builder.row(
         InlineKeyboardButton(
@@ -84,10 +101,10 @@ def create_show_tasks_kb(tasks: tuple[Task]) -> InlineKeyboardMarkup:
     return kb_builder.as_markup()
 
 
-def create_edit_keyboard(tasks: tuple[Task]) -> InlineKeyboardMarkup:
+def create_edit_keyboard(tasks: tuple[Task], page: int = 1) -> InlineKeyboardMarkup:
     kb_builder: InlineKeyboardBuilder = InlineKeyboardBuilder()
 
-    for task in sorted(tasks, key=lambda x: x.id):
+    for task in tasks[page - 1 : page * 10 if page * 10 <= len(tasks) else len(tasks)]:
         kb_builder.row(
             InlineKeyboardButton(
                 text=f'{LEXICON["del_button"]} {task.id} - {task.title[:100]}',

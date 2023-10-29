@@ -2,6 +2,8 @@ from aiogram.filters import BaseFilter
 from aiogram.types import Message, CallbackQuery
 from config_data import settings
 
+from lexicon.lexicon import LEXICON
+
 
 class IsNumberButton(BaseFilter):
     async def __call__(self, callback: CallbackQuery) -> bool | dict[str, int]:
@@ -79,3 +81,26 @@ class IsDoneQuiz(BaseFilter):
 class IsStartTest(BaseFilter):
     async def __call__(self, callback: CallbackQuery) -> bool:
         return callback.data == "start_test"
+
+
+class IsTaskButton(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> dict[str, int] | bool:
+        data = callback.data.split(":")
+        if data[0] == "poll" and data[1] == "id" and data[-1].isdigit():
+            return {"poll_id": int(data[-1])}
+        return False
+
+
+class IsTaskDelButton(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> dict[str, int] | bool:
+        data = callback.data.split(":")
+        if data[0] == "poll" and data[1] == "id" and data[-1] == LEXICON["del_button"]:
+            return {"poll_id": int(data[-2])}
+        return False
+
+
+class IsLeftRightButton(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool | dict[str, str]:
+        if callback.data in (LEXICON["backward"], LEXICON["forward"]):
+            return {"button": callback.data}
+        return False

@@ -15,6 +15,7 @@ __all__ = [
     "select_task_test",
     "create_task",
     "select_tasks",
+    "select_tasks_by_id",
 ]
 
 from .base import Base, proceed_schemas
@@ -33,4 +34,5 @@ from .crud import (
     get_file_id,
     select_task_test,
     select_tasks,
+    select_tasks_by_id,
 )

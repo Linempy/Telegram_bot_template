@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from services import Quiz
 from states.state import FSMAddFile, FSMAddTask
-from database import insert_file, create_task, select_tasks
+from database import insert_file, create_task, select_tasks, select_tasks_by_id
 from keyboards import (
     create_quiz_kb,
     create_picture_no_button_kb,
@@ -26,6 +26,9 @@ from filters.filter import (
     IsCancel,
     IsNotSendPicture,
     IsDoneQuiz,
+    IsTaskButton,
+    IsTaskDelButton,
+    IsLeftRightButton,
 )
 from lexicon.lexicon import LEXICON
 
@@ -228,8 +231,57 @@ async def process_get_quiz(
 
 
 @router.message(Command(commands=["show_tasks"]))
-async def process_show_tasks(message: Message, session: AsyncSession):
+async def process_show_tasks(
+    message: Message, session: AsyncSession, state: FSMContext
+):
+    data = await state.get_data()
     tasks = await select_tasks(session)
+
     await message.answer(
-        text=LEXICON["show_tasks"], reply_markup=create_show_tasks_kb(tasks)
+        text=LEXICON["show_tasks"],
+        reply_markup=create_show_tasks_kb(tasks, data.get("page", 1)),
+    )
+
+
+@router.callback_query(IsTaskButton())
+async def process_task_button_press(
+    callback: CallbackQuery,
+    poll_id: int,
+    session: AsyncSession,
+    state: FSMContext,
+):
+    await callback.message.delete()
+    quiz = await select_tasks_by_id(poll_id, session)
+    await callback.message.answer(text=LEXICON["result_poll"])
+    await callback.message.answer_poll(
+        question=quiz.question,
+        options=quiz.options,
+        correct_option_id=quiz.correct_option_id,
+        type="quiz",
+        is_anonymous=False,
+        explanation=quiz.explanation,
+    )
+
+    data = await state.get_data()
+    tasks = await select_tasks(session)
+    await callback.message.answer(
+        text=LEXICON["show_tasks"],
+        reply_markup=create_show_tasks_kb(tasks, data.get("page", 1)),
+    )
+
+
+@router.callback_query(IsLeftRightButton())
+async def process_left_right_button_press(
+    callback: CallbackQuery, state: FSMContext, button: str, session: AsyncSession
+):
+    data = await state.get_data()
+    page = data.get("page", 1)
+    tasks = await select_tasks(session)
+    max_page = len(tasks) // 10 if not len(tasks) % 10 else len(tasks) // 10 + 1
+    if page < max_page and button == "backward":
+        page -= 1
+    elif page > 1 and button == "forward":
+        page += 1
+    await callback.message.edit_text(
+        text=LEXICON["show_tasks"], reply_markup=create_show_tasks_kb(tasks, page)
     )

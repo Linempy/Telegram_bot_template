@@ -111,6 +111,8 @@ LEXICON: dict[str, str] = {
     "cancel_button": "Отменить",
     "del_button": "✖️",
     "show_tasks": "<b>Список заданий:</b>",
+    "backward": "<<",
+    "forward": ">>",
 }
 
 LEXICON_COMMANDS: dict[str, str] = {

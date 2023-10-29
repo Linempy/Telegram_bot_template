@@ -1,5 +1,5 @@
 from aiogram import Router, Bot
-from aiogram.filters import Command, CommandStart, StateFilter, or_f
+from aiogram.filters import Command, CommandStart, StateFilter, or_f, and_f
 from aiogram.types import Message, CallbackQuery, PollAnswer, ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
@@ -162,9 +162,6 @@ async def process_send_poll(
 ):
     await callback.message.delete()
     quiz = await select_task_test(user_id=callback.from_user.id, session=session)
-    print(quiz)
-    print()
-    print()
     if quiz is not None:
         await insert_user_task(
             user_id=callback.from_user.id, task_id=quiz.id, session=session
@@ -180,9 +177,6 @@ async def process_send_poll(
             is_anonymous=False,
             explanation=quiz.explanation,
         )
-        print(correct_id)
-        print()
-        print()
         await state.update_data(poll_id=msg.poll.id)
         await state.update_data(chat_id=callback.message.chat.id)
         await state.update_data(num_task=num_task)
@@ -193,7 +187,8 @@ async def process_send_poll(
 
 
 @router.poll_answer(
-    StateFilter(FSMTestProcess) and ~StateFilter(FSMTestProcess.result),
+    StateFilter(FSMTestProcess),
+    ~StateFilter(FSMTestProcess.result),
 )
 async def process_poll(
     poll: PollAnswer, state: FSMContext, bot: Bot, session: AsyncSession

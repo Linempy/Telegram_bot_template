@@ -64,10 +64,15 @@ async def select_task_test(user_id: int, session: AsyncSession) -> None | Task:
 
 
 async def select_tasks(session: AsyncSession) -> None | tuple[Task]:
-    stmt = select(Task.title)
+    stmt = select(Task)
     tasks = await session.scalars(stmt)
-    print(tasks.all())
     return tasks.all()
+
+
+async def select_tasks_by_id(task_id: int, session: AsyncSession) -> None | Task:
+    stmt = select(Task).where(Task.id == task_id)
+    task = await session.scalar(stmt)
+    return task
 
 
 async def insert_user_task(user_id: int, task_id: int, session: AsyncSession) -> None:
@@ -79,6 +84,7 @@ async def insert_user_task(user_id: int, task_id: int, session: AsyncSession) ->
 async def main():
     async with db_helper.session_factory() as session:
         pass
+        # await select_tasks(session)
         # result = await insert_user_task(user_id=1061280205, task_id=3, session=session)
         # print(user.task)
 
