@@ -45,7 +45,12 @@ class IsTaskNumber(BaseFilter):
 
 class IsCancel(BaseFilter):
     async def __call__(self, callback: CallbackQuery) -> bool:
-        return callback.data == "cancel"
+        return callback.data == "cancel_type_file_kb"
+
+
+class IsCancelStartTest(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        return callback.data == "cancel_start_test"
 
 
 class IsBackTypeFile(BaseFilter):

@@ -31,7 +31,7 @@ def create_start_test_kb() -> InlineKeyboardMarkup:
     kb_builder.row(
         *[
             InlineKeyboardButton(text="Начать тест", callback_data="start_test"),
-            InlineKeyboardButton(text="Отменить", callback_data="cancel"),
+            InlineKeyboardButton(text="Отменить", callback_data="cancel_start_test"),
         ],
         width=1,
     )

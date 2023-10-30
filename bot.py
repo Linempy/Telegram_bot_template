@@ -35,8 +35,8 @@ async def main():
 
     dp.update.middleware(DbSessionMiddleware(session_pool=session))
 
-    dp.include_router(user_handlers.router)
     dp.include_router(admin_handlers.router)
+    dp.include_router(user_handlers.router)
     dp.include_router(other_handlers.router)
 
     await create_main_menu(bot)

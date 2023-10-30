@@ -54,6 +54,8 @@ def create_adding_file_kb() -> InlineKeyboardMarkup:
         width=3,
     )
 
-    kb_builder.row(InlineKeyboardButton(text="Отмена", callback_data="cancel"))
+    kb_builder.row(
+        InlineKeyboardButton(text="Отмена", callback_data="cancel_type_file_kb")
+    )
 
     return kb_builder.as_markup()

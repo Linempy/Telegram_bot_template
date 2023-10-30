@@ -49,34 +49,30 @@ router.message.filter(IsAdmin())
 @router.message(Command(commands=["adding_file"]), StateFilter(default_state))
 async def process_adding_file_command(message: Message, state: FSMContext):
     try:
+        await message.delete()
         await state.set_state(FSMAddFile.type_file_state)
         await message.answer(
             text=LEXICON["adding_file"], reply_markup=create_adding_file_kb()
         )
-        await message.delete()
     except:
         await message.answer(text=LEXICON["error"])
         await state.clear()
 
 
 @router.message(Command(commands=["adding_task"]), StateFilter(default_state))
-async def process_adding_file_command(message: Message, state: FSMContext):
+async def process_adding_task_command(message: Message, state: FSMContext):
     await message.answer(text=LEXICON["get_task_title"])
     await state.set_state(FSMAddTask.title_state)
 
 
 @router.callback_query(IsCancel(), StateFilter(FSMAddFile.type_file_state))
 async def process_cancel_button_press(callback: CallbackQuery, state: FSMContext):
-    try:
-        await callback.message.delete()
-    except:
-        await callback.message.answer(text=LEXICON["error"])
-    finally:
-        await state.clear()
+    await callback.message.delete()
+    await state.clear()
 
 
 @router.message(Command(commands=["cancel"]), StateFilter(default_state))
-async def process_cancel_button_press(message: Message):
+async def process_cancel_command(message: Message):
     try:
         await message.answer(text=LEXICON["cancel_default_state"])
     except:
@@ -86,7 +82,7 @@ async def process_cancel_button_press(message: Message):
 @router.message(
     Command(commands=["cancel"]), or_f(StateFilter(FSMAddFile), StateFilter(FSMAddTask))
 )
-async def process_cancel_button_press(message: Message, state: FSMContext):
+async def process_cancel_command_in_state(message: Message, state: FSMContext):
     try:
         await message.answer(text=LEXICON["cancel"])
     except TelegramBadRequest:
@@ -110,9 +106,7 @@ async def process_type_button_press(
 
 
 @router.message(StateFilter(FSMAddFile.task_number_state), IsTaskNumber())
-async def process_adding_file_command(
-    message: Message, state: FSMContext, task_number: int
-):
+async def get_num_task(message: Message, state: FSMContext, task_number: int):
     try:
         await state.update_data(task_number=task_number)
         await state.set_state(FSMAddFile.file_state)
@@ -125,9 +119,7 @@ async def process_adding_file_command(
 
 
 @router.message(F.content_type == "document", StateFilter(FSMAddFile))
-async def process_adding_file_command(
-    message: Message, state: FSMContext, session: AsyncSession
-):
+async def get_file(message: Message, state: FSMContext, session: AsyncSession):
     try:
         await state.update_data(file_id=message.document.file_id)
         await insert_file(**(await state.get_data()), session=session)
@@ -150,7 +142,7 @@ async def process_delete_msg(message: Message, state: FSMContext):
 
 
 @router.message(StateFilter(FSMAddTask.title_state), F.content_type == "text")
-async def process_get_title(message: Message, state: FSMContext):
+async def get_title(message: Message, state: FSMContext):
     if len(message.text) < 6:
         await message.answer(text=LEXICON["small_len_title"])
         return
@@ -171,14 +163,14 @@ async def process_get_title(message: Message, state: FSMContext):
 
 
 @router.message(StateFilter(FSMAddTask.picture_state), F.content_type == "photo")
-async def process_send_photo(message: Message, state: FSMContext):
+async def send_photo(message: Message, state: FSMContext):
     await state.update_data(picture_file_id=message.photo[0].file_id)
     await message.answer(text=LEXICON["send_quiz"], reply_markup=create_quiz_kb())
     await state.set_state(FSMAddTask.quiz_state)
 
 
 @router.callback_query(StateFilter(FSMAddTask.picture_state), IsNotSendPicture())
-async def process_get_picture(callback: CallbackQuery, state: FSMContext):
+async def get_photo(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
     if not (await state.get_data()).get("picture_file_id", ""):
         await callback.message.answer(
@@ -188,7 +180,7 @@ async def process_get_picture(callback: CallbackQuery, state: FSMContext):
 
 
 @router.message(StateFilter(FSMAddTask.quiz_state), F.content_type == "poll")
-async def process_get_quiz(message: Message, state: FSMContext):
+async def get_quiz(message: Message, state: FSMContext):
     await message.delete()
     await state.update_data(
         question=message.poll.question,
@@ -220,7 +212,7 @@ async def process_get_quiz(message: Message, state: FSMContext):
 
 
 @router.callback_query(StateFilter(FSMAddTask.finish_state), IsDoneQuiz())
-async def process_get_quiz(
+async def get_agree_of_quiz(
     callback: CallbackQuery, bot: Bot, state: FSMContext, session: AsyncSession
 ):
     data = await state.get_data()
@@ -239,10 +231,8 @@ async def process_get_quiz(
     await state.clear()
 
 
-@router.message(Command(commands=["show_tasks"]))
-async def process_show_tasks(
-    message: Message, session: AsyncSession, state: FSMContext
-):
+@router.message(Command(commands=["show_tasks"]), StateFilter(default_state))
+async def show_tasks(message: Message, session: AsyncSession, state: FSMContext):
     data = await state.get_data()
     tasks = await select_tasks(session)
 
@@ -252,7 +242,7 @@ async def process_show_tasks(
     )
 
 
-@router.callback_query(IsTaskButton())
+@router.callback_query(IsTaskButton(), StateFilter(default_state))
 async def process_task_button_press(
     callback: CallbackQuery,
     poll_id: int,
@@ -279,7 +269,7 @@ async def process_task_button_press(
     )
 
 
-@router.callback_query(IsBackForButton())
+@router.callback_query(IsBackForButton(), StateFilter(default_state))
 async def process_left_right_button_press(
     callback: CallbackQuery,
     state: FSMContext,
@@ -303,7 +293,7 @@ async def process_left_right_button_press(
     await state.update_data(page=page)
 
 
-@router.callback_query(IsEditButton())
+@router.callback_query(IsEditButton(), StateFilter(default_state))
 async def process_edit_button_press(
     callback: CallbackQuery, state: FSMContext, session: AsyncSession
 ):
@@ -317,7 +307,7 @@ async def process_edit_button_press(
     )
 
 
-@router.callback_query(IsEditBFButton())
+@router.callback_query(IsEditBFButton(), StateFilter(default_state))
 async def process_back_for_button_press(
     callback: CallbackQuery, state: FSMContext, button: str, session: AsyncSession
 ):
@@ -336,7 +326,7 @@ async def process_back_for_button_press(
         await callback.answer()
 
 
-@router.callback_query(IsTaskDelButton())
+@router.callback_query(IsTaskDelButton(), StateFilter(default_state))
 async def process_delete_task(
     callback: CallbackQuery, task_id: int, state: FSMContext, session: AsyncSession
 ):
@@ -351,7 +341,7 @@ async def process_delete_task(
     )
 
 
-@router.callback_query(IsCancelEdit())
+@router.callback_query(IsCancelEdit(), StateFilter(default_state))
 async def process_edit_cancel(
     callback: CallbackQuery, state: FSMContext, session: AsyncSession
 ):

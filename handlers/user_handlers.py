@@ -22,7 +22,7 @@ from filters.filter import (
     IsBackSendFile,
     IsCancelNumKeyboard,
     IsStartTest,
-    IsCancel,
+    IsCancelStartTest,
 )
 from keyboards import (
     create_back_to_type_file_button,
@@ -36,7 +36,6 @@ from lexicon.lexicon import LEXICON
 
 
 router = Router()
-LIMIT_TASK = 5
 
 
 @router.message(CommandStart())
@@ -148,7 +147,7 @@ async def process_cancel_btn_of_num_kb_press(callback: CallbackQuery):
 
 
 @router.message(Command(commands=["quick_test"]), StateFilter(default_state))
-async def process_quick_test_command(message: Message, state: FSMContext):
+async def process_quick_test_command(message: Message):
     await message.answer(
         text=LEXICON["quick_test"], reply_markup=create_start_test_kb()
     )
@@ -257,9 +256,10 @@ async def process_send_result_test(message: Message):
     )
 
 
-@router.callback_query(IsCancel())
-async def process_send_result_test(callback: CallbackQuery):
+@router.callback_query(IsCancelStartTest())
+async def process_cancel_test(callback: CallbackQuery):
     await callback.message.delete()
+    await callback.message.answer(text=LEXICON["cancel_start_test_words"])
 
 
 # @router.message(Command(commands=['quick_test_2']), StateFilter(default_state))
