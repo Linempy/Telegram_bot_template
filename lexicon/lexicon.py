@@ -113,6 +113,7 @@ LEXICON: dict[str, str] = {
     "show_tasks": "<b>Список заданий:</b>",
     "backward": "<<",
     "forward": ">>",
+    "edit_button": "<b>Нажмите на кнопку, чтобы удалить задание</b>",
 }
 
 LEXICON_COMMANDS: dict[str, str] = {

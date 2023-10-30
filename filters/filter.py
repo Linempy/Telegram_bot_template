@@ -94,13 +94,32 @@ class IsTaskButton(BaseFilter):
 class IsTaskDelButton(BaseFilter):
     async def __call__(self, callback: CallbackQuery) -> dict[str, int] | bool:
         data = callback.data.split(":")
-        if data[0] == "poll" and data[1] == "id" and data[-1] == LEXICON["del_button"]:
-            return {"poll_id": int(data[-2])}
+        if data[0] == "poll" and data[1] == "id" and data[-1] == "del":
+            return {"task_id": int(data[-2])}
         return False
 
 
-class IsLeftRightButton(BaseFilter):
+class IsBackForButton(BaseFilter):
     async def __call__(self, callback: CallbackQuery) -> bool | dict[str, str]:
         if callback.data in (LEXICON["backward"], LEXICON["forward"]):
             return {"button": callback.data}
         return False
+
+
+class IsEditButton(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        return callback.data == "edit_tasks"
+
+
+class IsEditBFButton(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool | dict:
+        data = callback.data.split(":")
+        if data[0] in (LEXICON["backward"], LEXICON["forward"]) and data[-1] == "edit":
+            return {"button": data[0]}
+        return False
+
+
+class IsCancelEdit(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        print(callback.data)
+        return callback.data == "edit_cancel"

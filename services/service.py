@@ -1,4 +1,5 @@
 from database import Task
+from lexicon.lexicon import LEXICON
 
 from random import shuffle
 
@@ -34,3 +35,11 @@ def get_corr_id_in_shuffle_options(task: Task) -> int:
     correct_option = task.options[id_true_answer]
     shuffle(task.options)
     return task.options.index(correct_option)
+
+
+def get_edit_num_page(page: int, max_page: int, button: str) -> int:
+    if page > 1 and button == LEXICON["backward"]:
+        return page - 1
+    elif page < max_page and button == LEXICON["forward"]:
+        return page + 1
+    return page

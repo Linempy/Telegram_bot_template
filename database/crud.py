@@ -1,6 +1,6 @@
 import asyncio
 
-from sqlalchemy import select, func, exists
+from sqlalchemy import select, func, exists, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -81,10 +81,16 @@ async def insert_user_task(user_id: int, task_id: int, session: AsyncSession) ->
     await session.commit()
 
 
+async def delete_task(task_id, session: AsyncSession) -> None:
+    task = await session.get(Task, task_id)
+    await session.delete(task)
+    await session.commit()
+
+
 async def main():
     async with db_helper.session_factory() as session:
         pass
-        # await select_tasks(session)
+        # await delete_task(26, session)
         # result = await insert_user_task(user_id=1061280205, task_id=3, session=session)
         # print(user.task)
 

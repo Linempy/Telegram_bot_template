@@ -7,9 +7,15 @@ from aiogram.exceptions import TelegramBadRequest
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services import Quiz
+from services import Quiz, get_edit_num_page
 from states.state import FSMAddFile, FSMAddTask
-from database import insert_file, create_task, select_tasks, select_tasks_by_id
+from database import (
+    insert_file,
+    create_task,
+    select_tasks,
+    select_tasks_by_id,
+    delete_task,
+)
 from keyboards import (
     create_quiz_kb,
     create_picture_no_button_kb,
@@ -28,7 +34,10 @@ from filters.filter import (
     IsDoneQuiz,
     IsTaskButton,
     IsTaskDelButton,
-    IsLeftRightButton,
+    IsBackForButton,
+    IsEditButton,
+    IsEditBFButton,
+    IsCancelEdit,
 )
 from lexicon.lexicon import LEXICON
 
@@ -270,18 +279,87 @@ async def process_task_button_press(
     )
 
 
-@router.callback_query(IsLeftRightButton())
+@router.callback_query(IsBackForButton())
 async def process_left_right_button_press(
+    callback: CallbackQuery,
+    state: FSMContext,
+    button: str,
+    session: AsyncSession,
+):
+    data = await state.get_data()
+    tasks = await select_tasks(session)
+    max_page = len(tasks) // 10 if not len(tasks) % 10 else len(tasks) // 10 + 1
+    page = get_edit_num_page(data.get("page", 1), max_page, button)
+    try:
+        await callback.message.edit_text(
+            text=f"[{page}] {LEXICON['show_tasks']} ",
+            reply_markup=create_show_tasks_kb(tasks, page),
+        )
+    except TelegramBadRequest:
+        pass
+    finally:
+        await callback.answer()
+
+    await state.update_data(page=page)
+
+
+@router.callback_query(IsEditButton())
+async def process_edit_button_press(
+    callback: CallbackQuery, state: FSMContext, session: AsyncSession
+):
+    data = await state.get_data()
+    tasks = await select_tasks(session)
+    page = data.get("page", 1)
+
+    await callback.message.edit_text(
+        text=f"[{page}] {LEXICON['edit_button']}",
+        reply_markup=create_edit_keyboard(tasks, page),
+    )
+
+
+@router.callback_query(IsEditBFButton())
+async def process_back_for_button_press(
     callback: CallbackQuery, state: FSMContext, button: str, session: AsyncSession
 ):
     data = await state.get_data()
-    page = data.get("page", 1)
     tasks = await select_tasks(session)
     max_page = len(tasks) // 10 if not len(tasks) % 10 else len(tasks) // 10 + 1
-    if page < max_page and button == "backward":
-        page -= 1
-    elif page > 1 and button == "forward":
-        page += 1
+    page = get_edit_num_page(data.get("page", 1), max_page, button)
+    try:
+        await callback.message.edit_text(
+            text=f"[{page}] {LEXICON['edit_button']}",
+            reply_markup=create_edit_keyboard(tasks, page),
+        )
+    except TelegramBadRequest:
+        pass
+    finally:
+        await callback.answer()
+
+
+@router.callback_query(IsTaskDelButton())
+async def process_delete_task(
+    callback: CallbackQuery, task_id: int, state: FSMContext, session: AsyncSession
+):
+    await delete_task(task_id, session)
+
+    data = await state.get_data()
+    tasks = await select_tasks(session)
+    page = data.get("page", 1)
     await callback.message.edit_text(
-        text=LEXICON["show_tasks"], reply_markup=create_show_tasks_kb(tasks, page)
+        text=f"[{page}] {LEXICON['edit_button']}",
+        reply_markup=create_edit_keyboard(tasks, page),
+    )
+
+
+@router.callback_query(IsCancelEdit())
+async def process_edit_cancel(
+    callback: CallbackQuery, state: FSMContext, session: AsyncSession
+):
+    data = await state.get_data()
+    tasks = await select_tasks(session)
+    page = data.get("page", 1)
+
+    await callback.message.edit_text(
+        text=f"[{page}] {LEXICON['edit_button']}",
+        reply_markup=create_show_tasks_kb(tasks, page),
     )
