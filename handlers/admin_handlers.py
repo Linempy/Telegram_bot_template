@@ -23,6 +23,7 @@ from keyboards import (
     create_done_button_kb,
     create_show_tasks_kb,
     create_edit_keyboard,
+    create_num_reply_kb,
 )
 
 from filters.filter import (
@@ -38,6 +39,7 @@ from filters.filter import (
     IsEditButton,
     IsEditBFButton,
     IsCancelEdit,
+    IsCancelShowTask,
 )
 from lexicon.lexicon import LEXICON
 
@@ -49,7 +51,6 @@ router.message.filter(IsAdmin())
 @router.message(Command(commands=["adding_file"]), StateFilter(default_state))
 async def process_adding_file_command(message: Message, state: FSMContext):
     try:
-        await message.delete()
         await state.set_state(FSMAddFile.type_file_state)
         await message.answer(
             text=LEXICON["adding_file"], reply_markup=create_adding_file_kb()
@@ -74,7 +75,9 @@ async def process_cancel_button_press(callback: CallbackQuery, state: FSMContext
 @router.message(Command(commands=["cancel"]), StateFilter(default_state))
 async def process_cancel_command(message: Message):
     try:
-        await message.answer(text=LEXICON["cancel_default_state"])
+        await message.answer(
+            text=LEXICON["cancel_default_state"], reply_markup=ReplyKeyboardRemove()
+        )
     except:
         await message.answer(text=LEXICON["error"])
 
@@ -84,7 +87,7 @@ async def process_cancel_command(message: Message):
 )
 async def process_cancel_command_in_state(message: Message, state: FSMContext):
     try:
-        await message.answer(text=LEXICON["cancel"])
+        await message.answer(text=LEXICON["cancel"], reply_markup=ReplyKeyboardRemove())
     except TelegramBadRequest:
         pass
     finally:
@@ -96,11 +99,15 @@ async def process_type_button_press(
     callback: CallbackQuery, state: FSMContext, type_file: str
 ):
     try:
+        await callback.message.delete()
         await state.update_data(type_file=type_file)
         await state.set_state(FSMAddFile.task_number_state)
 
-        await callback.message.edit_text(text=LEXICON["send_task_number"])
-    except:
+        await callback.message.answer(
+            text=LEXICON["send_task_number"], reply_markup=create_num_reply_kb()
+        )
+    except Exception as e:
+        print(e)
         await callback.message.answer(text=LEXICON["error"])
         await state.clear()
 
@@ -111,7 +118,9 @@ async def get_num_task(message: Message, state: FSMContext, task_number: int):
         await state.update_data(task_number=task_number)
         await state.set_state(FSMAddFile.file_state)
 
-        await message.answer(text=LEXICON["loading_file"])
+        await message.answer(
+            text=LEXICON["loading_file"], reply_markup=ReplyKeyboardRemove()
+        )
     except Exception as e:
         print(e)
         await message.answer(text=LEXICON["error"])
@@ -339,6 +348,11 @@ async def process_delete_task(
         text=f"[{page}] {LEXICON['edit_button']}",
         reply_markup=create_edit_keyboard(tasks, page),
     )
+
+
+@router.callback_query(IsCancelShowTask(), StateFilter(default_state))
+async def process_delete_show_kb(callback: CallbackQuery):
+    await callback.message.delete()
 
 
 @router.callback_query(IsCancelEdit(), StateFilter(default_state))

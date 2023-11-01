@@ -38,7 +38,8 @@ class IsTaskNumber(BaseFilter):
     async def __call__(self, message: Message) -> bool | dict[str, int]:
         if message.content_type == "text":
             result = message.text.replace(" ", "")
-            if result.isdigit() and 1 <= int(result) <= 27:
+            if result.isdigit() and 1 <= int(result) <= 27 or result == "19-21":
+                result = 19 if result == "19-21" else result
                 return {"task_number": int(result)}
         return False
 
@@ -51,6 +52,11 @@ class IsCancel(BaseFilter):
 class IsCancelStartTest(BaseFilter):
     async def __call__(self, callback: CallbackQuery) -> bool:
         return callback.data == "cancel_start_test"
+
+
+class IsCancelShowTask(BaseFilter):
+    async def __call__(self, callback: CallbackQuery) -> bool:
+        return callback.data == "cancel"
 
 
 class IsBackTypeFile(BaseFilter):
@@ -126,5 +132,4 @@ class IsEditBFButton(BaseFilter):
 
 class IsCancelEdit(BaseFilter):
     async def __call__(self, callback: CallbackQuery) -> bool:
-        print(callback.data)
         return callback.data == "edit_cancel"

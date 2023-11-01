@@ -1,5 +1,10 @@
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.types import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    ReplyKeyboardMarkup,
+    KeyboardButton,
+)
+from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 
 
 def create_number_task_kb(seq_num_task: set) -> InlineKeyboardMarkup:
@@ -7,7 +12,10 @@ def create_number_task_kb(seq_num_task: set) -> InlineKeyboardMarkup:
 
     kb_builder.row(
         *[
-            InlineKeyboardButton(text=f"Задание {num}", callback_data=f"but:{num}")
+            InlineKeyboardButton(
+                text=f"Задание {num}" if num != 19 else f"Задания 19-21",
+                callback_data=f"but:{num}",
+            )
             for num in sorted(seq_num_task)
         ],
         width=3,
@@ -59,3 +67,16 @@ def create_adding_file_kb() -> InlineKeyboardMarkup:
     )
 
     return kb_builder.as_markup()
+
+
+def create_num_reply_kb() -> ReplyKeyboardMarkup:
+    kb_builder: ReplyKeyboardBuilder = ReplyKeyboardBuilder()
+
+    kb_builder.row(
+        *[
+            KeyboardButton(text=str(num))
+            for num in (*range(1, 19), "19-21", *range(22, 28))
+        ]
+    )
+
+    return kb_builder.as_markup(one_time_keyboard=True, resize_keyboard=True)
