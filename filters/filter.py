@@ -21,11 +21,13 @@ class IsFilePrepare(BaseFilter):
         return False
 
 
+# Проверка на администратора
 class IsAdmin(BaseFilter):
     async def __call__(self, message: Message) -> bool:
         return message.from_user.id in settings.tgbot.ADMIN_IDS
 
 
+# Проверка на нажатие кнопок Теория, Теория Python, Практика
 class IsTypeFile(BaseFilter):
     async def __call__(self, callback: CallbackQuery) -> bool | dict[str]:
         result = callback.data.split(":")

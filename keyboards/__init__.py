@@ -31,4 +31,3 @@ from .quiz_kb import (
     create_edit_keyboard,
     create_show_tasks_kb,
 )
-from .test_kb import create_test_task_kb

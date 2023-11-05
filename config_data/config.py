@@ -5,14 +5,17 @@ from environs import Env
 
 @dataclass
 class TgBot:
-    token: str
-    ADMIN_IDS: list[int]
+    token: str  # Токен для доступа к телеграм-боту
+    ADMIN_IDS: list[int]  # Список ID администраторов бота
 
 
 @dataclass
 class DatabaseConfig:
-    url: str
-    echo: bool = True
+    url: str  # Ссылка для взаимодействием с базой данных
+    host: str  # Хост для redis
+    echo: bool = (
+        True  # Парамер, который информирует о любых взаимодействиях с базой данных
+    )
 
 
 @dataclass
@@ -21,6 +24,8 @@ class Config:
     db: DatabaseConfig
 
 
+# Функция для загрузки секретных данных в экземпляр класса
+# Config
 def load_config(path: str | None = None) -> Config:
     env = Env()
     env.read_env(path)
@@ -31,9 +36,10 @@ def load_config(path: str | None = None) -> Config:
         ),
         db=DatabaseConfig(
             url=f"postgresql+asyncpg://{env('DB_USER')}:{env('DB_PASS')}@"
-            f"{env('DB_HOST')}:{env('DB_PORT')}/{env('DB_NAME')}"
+            f"{env('DB_HOST')}:{env('DB_PORT')}/{env('DB_NAME')}",
+            host=env("DB_HOST"),
         ),
     )
 
 
-settings: Config = load_config()
+settings: Config = load_config()  # Переменная для обращение к секретным данным

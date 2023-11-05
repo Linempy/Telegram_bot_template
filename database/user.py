@@ -12,12 +12,15 @@ if TYPE_CHECKING:
 
 
 class User(Base):
+    # Имя таблицы
     __tablename__ = "users"
 
+    # Создание полей id пользователя, логин, имя
     user_id: Mapped[int] = mapped_column(BigInteger, unique=True, primary_key=True)
     username: Mapped[str | None] = mapped_column(String(32), unique=True)
     full_name: Mapped[str] = mapped_column(String(128))
 
+    # Создание связи many-to-many таблицы users с tasks
     task: Mapped[list["Task"]] = relationship(
         back_populates="user",
         secondary=UserTaskAssociation.__tablename__,

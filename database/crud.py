@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 from database import User, Task, File, UserTaskAssociation, db_helper
 
 
+# Функция для добавления пользователя к таблицу users
 async def insert_user(
     user_id: int, username: str, full_name: str, session: AsyncSession
 ) -> None:
@@ -18,7 +19,8 @@ async def insert_user(
         await session.commit()
 
 
-# Создание кнопок 'Теория', 'Теория Python' и 'Практика' после нажатия на кнопку номером задания
+# Получение типой файлов 'Теория', 'Теория Python' и 'Практика'
+# после нажатия на кнопку номером задания
 async def select_type_files(task_number: int, session: AsyncSession) -> list[str]:
     stmt = select(File.type_file).where(File.task_number == task_number)
     result = await session.scalars(stmt)
@@ -26,6 +28,7 @@ async def select_type_files(task_number: int, session: AsyncSession) -> list[str
     return seq
 
 
+# Получение файла с материалом по id
 async def get_file_id(type_file: str, task_number: int, session: AsyncSession) -> str:
     stmt = select(File.file_id).where(
         File.task_number == task_number,
@@ -44,14 +47,13 @@ async def select_quantity_task(session: AsyncSession) -> set:
     return set(result.all())
 
 
-# Получение данных task test
+# Получение неповторяющийся тестовых заданий
+# для пользователя
 async def select_task_test(user_id: int, session: AsyncSession) -> None | Task:
     stmt_1 = (
         select(User).where(User.user_id == user_id).options(selectinload(User.task))
     )
     user = await session.scalar(stmt_1)
-    # print(user.task)
-    # stmt_2 = exists().where(user.task.id == UserTaskAssociation.task_id)
 
     stmt_2 = exists().where(
         (Task.id == UserTaskAssociation.task_id)
@@ -59,47 +61,29 @@ async def select_task_test(user_id: int, session: AsyncSession) -> None | Task:
     )
     stmt = select(Task).filter(~stmt_2).order_by(func.random()).limit(1)
     task = await session.scalar(stmt)
-    # tasks = tuple(task for task in result)
     return task
 
 
+# Функция для получения всех тестовых заданий
 async def select_tasks(session: AsyncSession) -> None | tuple[Task]:
     stmt = select(Task)
     tasks = await session.scalars(stmt)
     return tasks.all()
 
 
-async def select_tasks_by_id(task_id: int, session: AsyncSession) -> None | Task:
-    stmt = select(Task).where(Task.id == task_id)
-    task = await session.scalar(stmt)
-    return task
-
-
+# Добавления user_id и task_id в таблицу user_task_association
+# после ответа на 1 тестовое задание
 async def insert_user_task(user_id: int, task_id: int, session: AsyncSession) -> None:
     user_task = UserTaskAssociation(user_id=user_id, task_id=task_id)
     session.add(user_task)
     await session.commit()
 
 
-async def delete_task(task_id, session: AsyncSession) -> None:
-    task = await session.get(Task, task_id)
-    await session.delete(task)
-    await session.commit()
-
-
-async def main():
-    async with db_helper.session_factory() as session:
-        pass
-        # await delete_task(26, session)
-        # result = await insert_user_task(user_id=1061280205, task_id=3, session=session)
-        # print(user.task)
-
-
 # ----- Админ запросы -----
+# Функция для добавления файла
 async def insert_file(
     file_id: str, type_file: str, task_number: int, session: AsyncSession
 ) -> None:
-    # Замена файла если совпадает его номер и тип
     data = await session.scalars(
         select(File).where(
             File.type_file == type_file,
@@ -112,6 +96,7 @@ async def insert_file(
     await session.commit()
 
 
+# Добавление тестового задания
 async def create_task(
     title: str,
     question: str,
@@ -134,5 +119,16 @@ async def create_task(
     await session.commit()
 
 
-if __name__ == "__main__":
-    asyncio.run(main())
+# Функция для получения тестовых заданий по id
+async def select_tasks_by_id(task_id: int, session: AsyncSession) -> None | Task:
+    stmt = select(Task).where(Task.id == task_id)
+    task = await session.scalar(stmt)
+    return task
+
+
+# Функция для удаления тестового задания
+# из базы данных
+async def delete_task(task_id, session: AsyncSession) -> None:
+    task = await session.get(Task, task_id)
+    await session.delete(task)
+    await session.commit()

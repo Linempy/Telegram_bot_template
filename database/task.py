@@ -11,8 +11,11 @@ if TYPE_CHECKING:
 
 
 class Task(Base):
+    # Имя таблицы
     __tablename__ = "tasks"
 
+    # Создание колонок id, название задания, вопрос, id картинки,
+    # варианты ответа, индекс правильного ответа, решение.
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True)
     title: Mapped[str]
     question: Mapped[str]
@@ -21,6 +24,7 @@ class Task(Base):
     correct_option_id: Mapped[str] = mapped_column(String(16))
     explanation: Mapped[str | None]
 
+    # Создание связи many-to-many между таблицей tasks и users
     user: Mapped[list["User"]] = relationship(
         back_populates="task",
         secondary=UserTaskAssociation.__tablename__,

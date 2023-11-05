@@ -38,29 +38,36 @@ from lexicon.lexicon import LEXICON
 router = Router()
 
 
+# Хендлер для команды start
 @router.message(CommandStart())
 async def process_start_command(message: Message, bot: Bot, session: AsyncSession):
     data = message.from_user
+    # Добавление пользователя в БД
     await insert_user(
         user_id=data.id,
         username=data.username,
         full_name=data.full_name,
         session=session,
     )
+    # Отправка сообщения пользователю
     await message.answer(text=LEXICON["start"])
+    # Создание меню
     await create_main_menu(bot, message.from_user.id)
 
 
+# Хендлер для команды help
 @router.message(Command(commands=["help"]))
 async def process_help_command(message: Message):
-    await message.delete()
+    # Отправка сообщения пользователю
     await message.answer(text=LEXICON["help"])
 
 
+# Хендлер для команды file_to_prepare
 @router.message(Command(commands=["file_to_prepare"]))
 async def process_file_to_prepare_command(message: Message, session: AsyncSession):
     try:
         await message.delete()
+        # Отправка сообщения пользователю
         await message.answer(
             text=LEXICON["file_to_prepare"],
             reply_markup=create_number_task_kb(await select_quantity_task(session)),
@@ -70,21 +77,27 @@ async def process_file_to_prepare_command(message: Message, session: AsyncSessio
         await message.answer(text=LEXICON["error"])
 
 
+# Хендлер для команды get_table
 @router.message(Command(commands=["get_table"]))
 async def process_test_command(message: Message):
+    # Отправка Excel таблицы
     await message.answer_document(
         document="BQACAgIAAxkBAAIOtmU6im4VYro2GOsEkrkWswqeG4zQAAKyPgACaFfZSZXYy3gCtwVTMAQ",
         caption=LEXICON["get_table"],
     )
 
 
+# Хендлер для команды info
 @router.message(Command(commands=["info"]))
 async def process_info_command(message: Message):
+    # Отправка сообщения пользователю
     await message.answer(text=LEXICON["info"])
 
 
+# Хендлер для команды useful_links
 @router.message(Command(commands=["useful_links"]))
 async def process_useful_links_command(message: Message):
+    # Отправка сообщения пользователю
     await message.answer(text=LEXICON["useful_links"])
 
 
@@ -146,11 +159,11 @@ async def process_cancel_btn_of_num_kb_press(callback: CallbackQuery):
     await callback.message.delete()
 
 
-@router.message(Command(commands=["quick_test"]), StateFilter(default_state))
-async def process_quick_test_command(message: Message):
-    await message.answer(
-        text=LEXICON["quick_test"], reply_markup=create_start_test_kb()
-    )
+# Хендлер для команды test
+@router.message(Command(commands=["test"]), StateFilter(default_state))
+async def process_test_command(message: Message):
+    # Отправка сообщения пользователю
+    await message.answer(text=LEXICON["test"], reply_markup=create_start_test_kb())
 
 
 @router.callback_query(
@@ -167,7 +180,8 @@ async def process_send_poll(
         )
         num_task = 1
         correct_id = get_corr_id_in_shuffle_options(quiz)
-
+        if quiz.picture_file_id:
+            await callback.message.answer_photo(quiz.picture_file_id)
         msg = await callback.message.answer_poll(
             question=quiz.question,
             options=quiz.options,
@@ -194,7 +208,6 @@ async def process_poll(
 ):
     data = await state.get_data()
     count_true_answer = data.get("count_true_answer", 0)
-    print(poll.option_ids[0] == data.get("correct_id"))
     if poll.option_ids[0] == data["correct_id"]:
         await state.update_data(count_true_answer=count_true_answer + 1)
 
@@ -209,6 +222,8 @@ async def process_poll(
         await state.set_state(OrderTask.order_state.get(num_task))
 
         chat_id = data["chat_id"]
+        if quiz.picture_file_id:
+            await bot.send_photo(chat_id, quiz.picture_file_id)
         await bot.send_poll(
             chat_id=chat_id,
             question=quiz.question,
@@ -260,56 +275,6 @@ async def process_send_result_test(message: Message):
 async def process_cancel_test(callback: CallbackQuery):
     await callback.message.delete()
     await callback.message.answer(text=LEXICON["cancel_start_test_words"])
-
-
-# @router.message(Command(commands=['quick_test_2']), StateFilter(default_state))
-# async def process_quick_test_2_command(message: Message, state: FSMContext):
-#     num_task = 1
-#     correct_count = 0
-#     data = await select_task_test()
-
-#     await message.answer(text=data[0].task_text,
-#                          reply_markup=create_test_task_kb(data[0].id, data[0].options))
-
-#     await state.update_data(num_task=num_task)
-#     await state.update_data(correct_answer=correct_count)
-#     await state.set_state(FSMTestProcess.task_1)
-
-
-# @router.callback_query(StateFilter(FSMTestProcess))
-# async def process_task_1(callback: CallbackQuery, state: FSMContext):
-#     data = await select_task_test()
-
-#     states = {
-#         2: FSMTestProcess.task_2,
-#         3: FSMTestProcess.task_3,
-#         4: FSMTestProcess.task_4,
-#         5: FSMTestProcess.task_5
-#     }
-
-#     num_task = (await state.get_data())['num_task']
-#     if num_task <= LIMIT_TASK:
-#         correct_count = (await state.get_data())['correct_answer']
-
-#         await callback.message.edit_text(
-#             text=data[num_task].task_text,
-#             reply_markup=create_test_task_kb(data[num_task].id,
-#                                              data[num_task].options
-#                                             )
-#         )
-
-#         if callback.data == data[num_task].true_answer:
-#             correct_count += 1
-
-#         num_task += 1
-#         await state.update_data(answer_1=callback.data)
-#         await state.update_data(num_task=num_task)
-#         await state.update_data(correct_answer=correct_count)
-#         await state.set_state(states[num_task])
-#     else:
-#         await callback.message.edit_text(text=f'{LEXICON["finish_test"]}{correct_count}')
-#         # Добавить изменение столбца shipped на значение True
-#         await state.clear()
 
 
 @router.message(Command(commands=["cancel"]), StateFilter(default_state))

@@ -63,7 +63,7 @@ def create_show_tasks_kb(tasks: tuple[Task], page: int) -> InlineKeyboardMarkup:
     kb_builder: InlineKeyboardBuilder = InlineKeyboardBuilder()
 
     for num, task in zip(
-        range(1, len(tasks) + 1),
+        range((page - 1) * 10 + 1, len(tasks) + 1),
         tasks[(page - 1) * 10 : page * 10 if page * 10 <= len(tasks) else len(tasks)],
     ):
         kb_builder.row(
@@ -109,7 +109,7 @@ def create_edit_keyboard(tasks: tuple[Task], page: int) -> InlineKeyboardMarkup:
     kb_builder: InlineKeyboardBuilder = InlineKeyboardBuilder()
 
     for num, task in zip(
-        range(1, len(tasks) + 1),
+        range((page - 1) * 10 + 1, len(tasks) + 1),
         tasks[(page - 1) * 10 : page * 10 if page * 10 <= len(tasks) else len(tasks)],
     ):
         kb_builder.row(
