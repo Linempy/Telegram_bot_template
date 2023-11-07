@@ -200,22 +200,26 @@ async def get_title(message: Message, state: FSMContext):
     elif message.text[0] == "/":
         await message.answer(text=LEXICON["write_title"])
         return
-    # Добавление названия в базу redis
-    await state.update_data(title=message.text)
     # Переход в состояние добавление картинки
     await state.set_state(FSMAddTask.picture_state)
     await message.answer(
         text=LEXICON["send_picture"], reply_markup=create_picture_no_button_kb()
     )
+    # Добавление названия в базу redis
+    await state.update_data(title=message.text)
 
 
 # Хендлер на отправку изображения
 @router.message(StateFilter(FSMAddTask.picture_state), F.content_type == "photo")
 async def send_photo(message: Message, state: FSMContext):
+    # Отправка сообщения
+    msg_res_quiz = await message.answer(
+        text=LEXICON["send_quiz"], reply_markup=create_quiz_kb()
+    )
     # Добавление в redis id изображения
     await state.update_data(picture_file_id=message.photo[0].file_id)
-    # Отправка сообщения
-    await message.answer(text=LEXICON["send_quiz"], reply_markup=create_quiz_kb())
+    await state.update_data(msg_id_res_quiz=msg_res_quiz.message_id)
+    await state.update_data(chat_id_msg=msg_res_quiz.chat.id)
     # Переход в состояние заполнения викторины
     await state.set_state(FSMAddTask.quiz_state)
 
@@ -225,17 +229,26 @@ async def send_photo(message: Message, state: FSMContext):
 async def get_photo(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
     if not (await state.get_data()).get("picture_file_id", ""):
-        await callback.message.answer(
+        msg_res_quiz = await callback.message.answer(
             text=LEXICON["send_quiz"], reply_markup=create_quiz_kb()
         )
         # Переход в состояние заполнения викторины
+        await state.update_data(msg_id_res_quiz=msg_res_quiz.message_id)
+        await state.update_data(chat_id_msg=msg_res_quiz.chat.id)
         await state.set_state(FSMAddTask.quiz_state)
 
 
 # Хендлер на отправку заполненной викторины
 @router.message(StateFilter(FSMAddTask.quiz_state), F.content_type == "poll")
-async def get_quiz(message: Message, state: FSMContext):
-    await message.delete()
+async def get_quiz(message: Message, state: FSMContext, bot: Bot):
+    data = await state.get_data()
+    try:
+        await message.delete()
+        await bot.delete_message(
+            chat_id=data["chat_id_msg"], message_id=data["msg_id_res_quiz"]
+        )
+    except:
+        pass
     # Добавление в redis заполненные данные викторины
     explanation = (
         message.poll.explanation.replace("<", "&lt").replace(">", "&gt")
@@ -248,7 +261,7 @@ async def get_quiz(message: Message, state: FSMContext):
         correct_option_id=message.poll.correct_option_id,
         explanation=explanation,
     )
-    await message.answer(text=LEXICON["result_poll"])
+    msg_send_result_quiz = await message.answer(text=LEXICON["result_poll"])
     data = await state.get_data()
 
     # Создание экземпляра викторины
@@ -261,7 +274,8 @@ async def get_quiz(message: Message, state: FSMContext):
         picture_file_id=data.get("picture_file_id", None),
     )
     if quiz.picture is not None:
-        await message.answer_photo(photo=quiz.picture)
+        message_photo = await message.answer_photo(photo=quiz.picture)
+        await state.update_data(message_id_photo=message_photo.message_id)
     # Отправка викторины для просмотра
     msg = await message.answer_poll(
         question=quiz.question,
@@ -277,8 +291,9 @@ async def get_quiz(message: Message, state: FSMContext):
         text=LEXICON["done_quiz"], reply_markup=create_done_button_kb()
     )
     # Добавление в redis id сообщения и id чата
-    await state.update_data(message_id=msg.message_id)
     await state.update_data(chat_id=message.chat.id)
+    await state.update_data(message_id=msg.message_id)
+    await state.update_data(msg_id_result_quiz=msg_send_result_quiz.message_id)
     # Переход в состояние завершения формы
     await state.set_state(FSMAddTask.finish_state)
 
@@ -290,7 +305,16 @@ async def get_agree_of_quiz(
 ):
     # Получение заполненных данных из redis
     data = await state.get_data()
-    await bot.delete_message(chat_id=data["chat_id"], message_id=data["message_id"])
+    try:
+        for msg_id in (
+            data["msg_id_result_quiz"],
+            data["message_id"],
+            data.get("message_id_photo", ""),
+            data["msg_id_res_quiz"],
+        ):
+            await bot.delete_message(chat_id=data["chat_id"], message_id=msg_id)
+    except:
+        pass
     # Создание викторины и добавление в БД
     await create_task(
         session=session,
@@ -302,6 +326,13 @@ async def get_agree_of_quiz(
         picture_file_id=data.get("picture_file_id"),
     )
     # Отправка сообщения об успешном добавлении задания
+    if data.get("message_id_photo"):
+        try:
+            await bot.delete_message(
+                chat_id=data["chat_id"], message_id=data["message_id_photo"]
+            )
+        except:
+            pass
     await callback.message.edit_text(text=LEXICON["success_add_task"])
     await state.clear()
 
